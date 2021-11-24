@@ -1,0 +1,28 @@
+{
+  "AWS_REGION": "us-east-1",
+  "Mesh": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "Producer": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "ProducerAdmin":{
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "Consumer": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "ConsumerAdmin": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  }
+}

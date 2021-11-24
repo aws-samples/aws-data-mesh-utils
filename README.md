@@ -1,125 +1,118 @@
 # AWS Data Mesh Helper Library
 
-The AWS Data Mesh Helper library provides automation around the most common tasks that customers need to perform to
-implement a data mesh architecture on AWS. A data mesh on AWS uses a central AWS Account (the mesh account) to store the
-metadata associated with __Data Products__ created by data __Producers__. This allows other AWS Accounts to act as __
-Consumers__, and to request __Subscriptions__, which must be approved by __Producers__. Upon approval, the approved
-grants are provided to the __Consumer__
-and can be used within their AWS Account.
+The AWS Data Mesh Helper library provides automation around the most common tasks that customers need to perform to implement a data mesh architecture on AWS. A data mesh on AWS uses a central AWS Account (the mesh account) to store the metadata associated with __Data Products__ created by data __Producers__. This allows other AWS Accounts to act as __Consumers__, and to request __Subscriptions__, which must be approved by __Producers__. Upon approval, the approved grants are provided to the __Consumer__ and can be imported into their AWS Account.
 
 ### Definition of Terms
 
-* __Data Mesh__ - An architectural pattern which provides a centralised environment in which the data sharing contract
-  is managed. Data stays within __Producer__ AWS Accounts, and they own the lifecycle of granting __Subscriptions__.
+* __Data Mesh__ - An architectural pattern which provides a centralised environment in which the data sharing contract is managed. Data stays within __Producer__ AWS Accounts, and they own the lifecycle of granting __Subscriptions__.
 * __Producer__ - Any entity which offers a __Data Product__ through the __Data Mesh__
 * __Consumer__ - Any entity who subscribes to a __Data Product__ in the __Data Mesh__
-* __Subscription__ - The central record and associated AWS Lake Formation permissions linking a __Data Product__ to a __
-  Consumer__
-* __Data Product__ - Today, a __Data Product__ is scoped to be only an AWS Lake Formation Table or Database. In future
-  this definition may expand.
+* __Subscription__ - The central record and associated AWS Lake Formation permissions linking a __Data Product__ to a __Consumer__
+* __Data Product__ - Today, a __Data Product__ is scoped to be only an AWS Lake Formation Table or Database. In future this definition may expand.
 
 ### The Workflow
 
-To get started, you must first enable an AWS Account as the __Data Mesh__ Account. This is where you will store all Lake
-Formation metadata about the __Data Products__ which are offered to __Consumers__. Within this Account, there exist IAM
-Roles for __Producer__ and __Consumer__
+To get started, you must first enable an AWS Account as the __Data Mesh__ Account. This is where you will store all Lake Formation metadata about the __Data Products__ which are offered to __Consumers__. Within this Account, there exist IAM Roles for __Producer__ and __Consumer__
 which allow any AWS Identity who has access to perform tasks within the Data Mesh.
 
-Once you have setup an Account as the __Data Mesh__, you can then activate another AWS Account as a __Producer__, __
-Consumer__, or both. All of these tasks are performed by the __Data Mesh Admin__, which is accessible through an
-additional IAM Role or as any Administrator Identity within the mesh Account. Once completed, end users can perform the
-following Data Mesh tasks:
+Once you have setup an Account as the __Data Mesh__, you can then activate another AWS Account as a __Producer__, __Consumer__, or both. All of these tasks are performed by the __Data Mesh Admin__, which is accessible through an additional IAM Role or as any Administrator Identity within the mesh Account. Once completed, end users can perform the following Data Mesh tasks:
 
 ### Data Mesh Tasks
 
 | Producer | Data Mesh Administrator | Consumer |
 |----------|-----------|----------|
-|* __Create Data Product__ - Exposes a Lake Formation Database and/or one-or-more Tables as __Data Products__ </br>* __
-
-Approve/Deny Subscription Request__ - Allows for a __
-Producer__ to approve a set of permissions against a Data Product  </br>* __Modify Subscription__ - Allows a Producer to
-expand or reduce the scope of a Consumer's access to a Data Product | * __
-Initialize Mesh Account__ - Sets up an AWS Account to act as the central Data Mesh governance account</br>* __Initialize
-Producer Account__ - Sets up an AWS Account to act as a Data Producer </br>* __Initialize Consumer Account__ - Sets up
-an AWS Account to act as a Data Consumer </br>* __Enable Account as Producer__ - Identifies an account as a Producer
-within the Data Mesh Account </br>* __Enable Account as Consumer__  - Identifies an account as a Consumer within the
-Data Mesh Account| * __Request Access to Product__ - Creates a request for access to a Data Product including requested
-grants </br>* __Finalize Subscription__ - Once a subscription has been granted for a data product, imports the metadata
-into the Consumer Account </br>* __
-List Product Access__ - Lists which subscriptions are available to the consumer including the status of the request |
+|* __Create Data Product__ - Exposes a Lake Formation Database and/or one-or-more Tables as __Data Products__ </br>* __Approve/Deny Subscription Request__ - Allows for a __Producer__ to approve a set of permissions against a Data Product  </br>* __Modify Subscription__ - Allows a Producer to expand or reduce the scope of a Consumer's access to a Data Product | </br>* __Initialize Mesh Account__ - Sets up an AWS Account to act as the central Data Mesh governance account</br>* __Initialize Producer Account__ - Sets up an AWS Account to act as a Data Producer </br>* __Initialize Consumer Account__ - Sets up an AWS Account to act as a Data Consumer </br>* __Enable Account as Producer__ - Identifies an account as a Producer within the Data Mesh Account </br>* __Enable Account as Consumer__  - Identifies an account as a Consumer within the Data Mesh Account | </br>* __Request Access to Product__ - Creates a request for access to a Data Product including requested grants </br>* __Finalize Subscription__ - Once a subscription has been granted for a data product, imports the metadata into the Consumer Account </br>* __List Product Access__ - Lists which subscriptions are available to the consumer including the status of the request | 
 
 The following general functionality available to any Data Mesh role:
-
-* __Delete Subscription__ - Allows a Consumer or Producer to delete a Subscription request. Can be used at any time.
-  Please note the Subscription is not deleted, but instead is archived.
+ 
+* __Delete Subscription__ - Allows a Consumer or Producer to delete a Subscription request. Can be used at any time. Please note the Subscription is not deleted, but instead is archived.
 * __List Subscriptions__ - Lists all Subscriptions and their associated status for any number of filters
 * __Get Subscription__ - Retrieves a single Subscription
 
 ### Overall System Architecture
 
-The following diagram depicts the overall system architecture associated with a Data Mesh that is in use by a single __
-Producer__ and __Consumer__:
+The following diagram depicts the overall system architecture associated with a Data Mesh that is in use by a separate __Producer__ and __Consumer__ Accounts:
 
 ![Architecture](doc/architecture.png)
 
-In this architecture, we can see that the data mesh is configured in AWS Account 555555555555, and contains a set of IAM
-Roles which allow identities within producer and consumer accounts to access the mesh. This includes:
+In this architecture, we can see that the data mesh is configured in AWS Account 555555555555, and contains a set of IAM Roles which allow identities within producer and consumer accounts to access the mesh. This includes:
 
 * `DataMeshManager`: IAM Role allowing administration of the Data Mesh itself
 * `DataMeshAdminProducer`: IAM Role enabling the assuming Identity to act as a __Producer__
 * `DataMeshAdminConsumer`: IAM Role enabling the assuming Identity to act as a __Consumer__
 * `DataMeshAdminReadOnly`: IAM Role that can be used for reading Metadata from the Data Mesh Account (only)
 
-For testing and simplicity, every IAM Role in the solution is accompanied by a single IAM User who is a member of a
-Group specific to the function. This will enable you to add users to this Group should you wish to, rather than using a
-programmatic approach. IAM Roles are backed by an IAM Policy of the same name as the Role, and all objects in the IAM
-stack for AWS Data Mesh reside at path _/AwsDataMesh/_.
+For testing and simplicity, every IAM Role in the solution is accompanied by a single IAM User who is a member of a Group specific to the function. This will enable you to add users to this Group should you wish to, rather than using a programmatic approach. IAM Roles are backed by an IAM Policy of the same name as the Role, and all objects in the IAM stack for AWS Data Mesh reside at path _/AwsDataMesh/_.
 
-You can then see that there is a Producer Account 111111111111 who has been enabled to act as a __Producer__. Within
-this account we see a similar approach to IAM principals, with the creation of a `DataMeshProducer` IAM Role which is
-accompanied by an associated user and group. When configured, the `DataMeshProducer` group is granted rights to assume
+You can then see that there is a Producer Account 111111111111 who has been enabled to act as a __Producer__. Within this account we see a similar approach to IAM principals, with the creation of a `DataMeshProducer` IAM Role which is accompanied by an associated user and group. When configured, the `DataMeshProducer` group is granted rights to assume
 the `DataMeshProducer-<account id>` role in the data mesh Account.
 
-Similarly, we have a consumer Account 999999999999. This Account also includes IAM objects to enable data mesh access,
-including the `DataMeshConsumer` IAM Role, and associated IAM users and groups. Only the `DataMeshConsumer` role may
-assume the `DataMeshAdminConsumer-<account id>` role in the data mesh Account.
+Similarly, we have a consumer Account 999999999999. This Account also includes IAM objects to enable data mesh access, including the `DataMeshConsumer` IAM Role, and associated IAM users and groups. Only the `DataMeshConsumer` role may assume the `DataMeshAdminConsumer-<account id>` role in the data mesh Account.
 
-All information around current or pending subscriptions is stored in DynamoDB, in table `AwsDataMeshSubscriptions`. This
-table is secured for only those operations which Producers or Consumer roles are allowed to execute, and stores the
-overall lifecycle for Subscriptions.
+All information around current or pending subscriptions is stored in DynamoDB, in table `AwsDataMeshSubscriptions`. This table is secured for only those operations which Producers or Consumer roles are allowed to execute, and stores the overall lifecycle for Subscriptions.
 
 ### Library Structure
 
-This functionality is presented to customers as a Python library to allow maximum re-use. It is divided into 3 modules,
-each specific to a persona within the overall Data Mesh architecture:
+This functionality is presented to customers as a Python library to allow maximum re-use. It is divided into 3 modules, each specific to a persona within the overall Data Mesh architecture:
 
 * `src`
     * `data_mesh_util`
-        * [`DataMeshAdmin.py`](doc/DataMeshAdmin.md) - Includes functionality to be performed by the Administrative
-          function for each account type
-        * [`DataMeshProducer.py`](doc/DataMeshProducer.md) - Includes functionality performed by the Producer persona,
-          to create and manage Data Products and manage subscriptions for their products
-        * [`DataMeshConsumer.py`](doc/DataMeshConsumer.md) - Includes functionality allowing principals to subscribe to
-          Data Products
+        * [`DataMeshAdmin.py`](doc/DataMeshAdmin.md) - Includes functionality to be performed by the Administrative function for each account type
+        * [`DataMeshProducer.py`](doc/DataMeshProducer.md) - Includes functionality performed by the Producer persona, to create and manage Data Products and manage subscriptions for their products
+        * [`DataMeshConsumer.py`](doc/DataMeshConsumer.md) - Includes functionality allowing principals to subscribe to Data Products
+        * `DataMeshMacros.py` - Includes functions that span accounts using mulitple credentials
     * `lib`
         * `constants.py` - Contains constant values used in user or class interaction
         * `SubscriberTracker.py` - Class that manages data product Subscription status
         * `ApiAutomator.py` - Helper class that automates API requests against AWS Accounts
         * `utils.py` - Various utility functions shared across the codebase
     * `resource` - Pystache templates used to generate IAM policies
-* `test` - Integration tests of functionality
+* `examples` - Examples of how to use the module. Simplifies credentials configuration by using a credentials file with structure as:
+
+### Example Credentials File
+
+For the example usage scripts, you can configure a file on your filesystem with the following structure, which includes Access and Secret Keys for each of the personas used to demonstrate the functionality. You then reference this file in the examples through the `CredentialsFile` environment variable.
+
+```
+{
+  "AWS_REGION": "us-east-1",
+  "Mesh": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "Producer": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "ProducerAdmin":{
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "Consumer": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  },
+  "ConsumerAdmin": {
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": ""
+  }
+}
+```
+
+Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
 
 ## Getting Started
 
-To get started with Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We
-recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency
-requirements. However, you may choose to only have a single data mesh account for your entire business.
+To get started with Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
 
 ### Step 1 - Install the Data Mesh
 
-Installing the Data Mesh Utility functions must be run as 1/an AWS Administrative account, which 2/has Lake Formation
-Data Lake Admin permissions granted. This activity will only be done once. When you have granted the needed permissions,
-run the Data Mesh Installer with:
+Installing the Data Mesh Utility functions must be run as 1/an AWS Administrative account, which 2/has Lake Formation Data Lake Admin permissions granted. This activity will only be done once. When you have granted the needed permissions, run the Data Mesh Installer with:
 
 ```python
 import logging
@@ -149,9 +142,7 @@ mesh_admin.initialize_mesh_account()
 
 ### Step 2 - Enable an AWS Account as a Producer
 
-You must configure an account to act as a Producer in order to offer data shares to other accounts. This is an
-administrative task that is run once per AWS Account. The configured credentials must have AdministratorAccess as well
-as Lake Formation Data Lake Admin. To setup an account as a Producer, run:
+You must configure an account to act as a Producer in order to offer data shares to other accounts. This is an administrative task that is run once per AWS Account. The configured credentials must have AdministratorAccess as well as Lake Formation Data Lake Admin. To setup an account as a Producer, run:
 
 ```python
 import logging
@@ -193,9 +184,7 @@ mesh_macros.bootstrap_account(
 
 ### Step 3: Enable an AWS Account as a Consumer
 
-Accounts can be both producers and consumers, so you may wish to run this step against the account used above. You may
-also have Accounts that are Consumer only, and cannot create data shares. This step is only run once per AWS Account and
-must be run using credentials that have AdministratorAccess as well as being Lake Formation Data Lake Admin:
+Accounts can be both producers and consumers, so you may wish to run this step against the account used above. You may also have Accounts that are Consumer only, and cannot create data shares. This step is only run once per AWS Account and must be run using credentials that have AdministratorAccess as well as being Lake Formation Data Lake Admin:
 
 ```python
 import logging
@@ -235,17 +224,11 @@ mesh_macros.bootstrap_account(
 )
 ```
 
-The above Steps 2 and 3 can be run for any number of accounts that you require to act as Producers or Consumers. If you
-want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call
-to `bootstrap_account()`.
+The above Steps 2 and 3 can be run for any number of accounts that you require to act as Producers or Consumers. If you want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call to `bootstrap_account()`.
 
 ### Step 4: Create a Data Product
 
-Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while
-leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to
-enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or
-one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. 
-To create a data product:
+Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. To create a data product:
 
 ```python
 import logging
