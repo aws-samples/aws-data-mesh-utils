@@ -34,7 +34,7 @@ class DataMeshAdmin:
     _automator = None
 
     def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
-                 use_creds=None):
+                 use_credentialss=None):
         self._data_mesh_account_id = data_mesh_account_id
         # get the region for the module
         if region_name is None:
@@ -42,10 +42,10 @@ class DataMeshAdmin:
         else:
             self._region = region_name
 
-        if use_creds is None:
+        if use_credentialss is None:
             self._session = boto3.session.Session(region_name=self._region)
         else:
-            self._session = utils.create_session(credentials=use_creds, region=self._region)
+            self._session = utils.create_session(credentials=use_credentialss, region=self._region)
 
         self._iam_client = self._session.client('iam')
         self._sts_client = self._session.client('sts')

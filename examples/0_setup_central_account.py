@@ -31,7 +31,7 @@ class Step0():
         # create the data mesh
         mesh_admin = data_mesh_admin.DataMeshAdmin(data_mesh_account_id=self._account_ids.get(MESH),
                                                    region_name=self._region,
-                                                   log_level=logging.DEBUG, use_creds=self._creds.get(MESH))
+                                                   log_level=logging.DEBUG, use_credentialss=self._creds.get(MESH))
         mesh_admin.initialize_mesh_account()
 
         # create a macro handler which works across accounts

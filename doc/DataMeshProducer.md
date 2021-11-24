@@ -11,7 +11,7 @@ DataMeshProducer(
 	data_mesh_account_id: str, 
 	region_name: str = 'us-east-1', 
 	log_level: str = "INFO",
-	use_creds=None
+	use_credentials=None
 )                 
 ```
 
@@ -20,6 +20,17 @@ DataMeshProducer(
 * `data_mesh_account_id`: The AWS Account ID to use as the central Data Mesh Account in the region
 * `region_name`: The short AWS Region Name in which you want to execute Producer functions
 * `log_level`: The level of information you want to see when executing. Based upon python [`logging`](https://docs.python.org/3/library/logging.html), values include `INFO`, `DEBUG`, `ERROR`, etc.
+* `use_credentials`: Credentials to use to setup the instance. This can be provided as a boto3 Credentials object, a dict containing the below structure, or if None is provided the boto3 environment will be accessed.
+
+##### Credentials dict structure
+```json
+{
+    "AccountId": "The Consumer AWS Account ID",
+    "AccessKeyId": "Your access key",
+    "SecretAccessKey": "Your secret key",
+    "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
+}
+```
 
 The following methods are avialable:
 
@@ -123,7 +134,8 @@ dict
 		  "SubscriberPrincipal": str,
 		  "CreationDate": str,		  
 		  "CreatedBy": str
-		}
+		},
+		...
 	]
 }
 ```

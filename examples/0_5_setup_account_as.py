@@ -32,13 +32,13 @@ class Step0_5():
     def setup_account_as(self, account_id: str, role: str, use_credentials: dict, crawler_role_arn: str = None):
         # connect to the mesh account
         mesh_admin = dmu.DataMeshAdmin(data_mesh_account_id=self._account_ids.get(MESH), region_name=self._region,
-                                       log_level=logging.DEBUG, use_creds=self._creds.get(MESH))
+                                       log_level=logging.DEBUG, use_credentialss=self._creds.get(MESH))
 
         # setup the account as a producer
         if role in [PRODUCER, BOTH]:
             producer_admin = dmu.DataMeshAdmin(data_mesh_account_id=self._account_ids.get(MESH),
                                                region_name=self._region,
-                                               log_level=logging.DEBUG, use_creds=use_credentials)
+                                               log_level=logging.DEBUG, use_credentialss=use_credentials)
             producer_admin.initialize_producer_account(crawler_role_arn=crawler_role_arn)
             mesh_admin.enable_account_as_producer(account_id)
 
@@ -46,7 +46,7 @@ class Step0_5():
         if role in [CONSUMER, BOTH]:
             consumer_admin = dmu.DataMeshAdmin(data_mesh_account_id=self._account_ids.get(MESH),
                                                region_name=self._region,
-                                               log_level=logging.DEBUG, use_creds=use_credentials)
+                                               log_level=logging.DEBUG, use_credentialss=use_credentials)
             consumer_admin.initialize_consumer_account(crawler_role_arn=crawler_role_arn)
             mesh_admin.enable_account_as_consumer(account_id)
 

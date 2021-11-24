@@ -19,7 +19,7 @@ class DataMeshMacros:
             data_mesh_account_id=self._data_mesh_account_id,
             region_name=self._region,
             log_level=self._log_level,
-            use_creds=mesh_credentials
+            use_credentialss=mesh_credentials
         )
 
         # create a data mesh admin for the target account
@@ -27,7 +27,7 @@ class DataMeshMacros:
             data_mesh_account_id=self._data_mesh_account_id,
             region_name=self._region,
             log_level=self._log_level,
-            use_creds=account_credentials
+            use_credentialss=account_credentials
         )
 
         if account_type == PRODUCER or account_type.lower() == self._BOTH.lower():

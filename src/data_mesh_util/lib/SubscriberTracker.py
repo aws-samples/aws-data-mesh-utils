@@ -36,6 +36,8 @@ class SubType(Enum):
     DATA_PRODUCT = 3
     DOMAIN = 4
 
+    # TODO implement __str__ method to return a user friendly name when printing
+
 
 def _generate_id():
     return shortuuid.uuid()

@@ -479,6 +479,7 @@ class DataMeshProducer:
             )
 
         # update the subscription to reflect the changes
+        # TODO add ability to include grantable_grants to the subscription status
         self._subscription_tracker.update_status(
             subscription_id=request_id, status=STATUS_ACTIVE,
             permitted_grants=grant_permissions, notes=decision_notes, ram_shares=ram_shares, table_arns=table_arns
