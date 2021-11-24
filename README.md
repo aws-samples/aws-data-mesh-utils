@@ -140,6 +140,8 @@ mesh_admin = dmu.DataMeshAdmin(
 mesh_admin.initialize_mesh_account()
 ```
 
+You can also use [examples/0\_setup\_central\_account.py](examples/0_setup_central_account.py)  as an example to build your own application.
+
 ### Step 1.1 - Enable an AWS Account as a Producer
 
 You must configure an account to act as a Producer in order to offer data shares to other accounts. This is an administrative task that is run once per AWS Account. The configured credentials must have AdministratorAccess as well as Lake Formation Data Lake Admin. To setup an account as a Producer, run:
@@ -181,6 +183,7 @@ mesh_macros.bootstrap_account(
     account_credentials=producer_credentials
 )
 ```
+You can also use [examples/0\_5\_setup\_account\_as.py](examples/0_5_setup_account_as.py) as an example to build your own application.
 
 ### Step 1.2: Enable an AWS Account as a Consumer
 
@@ -220,7 +223,7 @@ mesh_macros.bootstrap_account(
 )
 ```
 
-The above Steps 2 and 3 can be run for any number of accounts that you require to act as Producers or Consumers. If you want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call to `bootstrap_account()`.
+The above Steps 1.1 and 1.2 can be run for any number of accounts that you require to act as Producers or Consumers. You can also use [examples/0\_5\_setup\_account\_as.py](examples/0_5_setup_account_as.py) as an example to build your own application.. If you want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call to `bootstrap_account()`.
 
 ### Step 2: Create a Data Product
 
@@ -266,6 +269,8 @@ data_mesh_producer.create_data_products(
 )
 ```
 
+You can also use [examples/1\_create\_data\_product.py](examples/1_create_data_product.py) as an example to build your own application.
+
 ### Step 3: Request access to a Data Product Table
 
 As a consumer, you can gain view public metadata by assuming the `DataMeshReadOnly` role in the mesh account. You can then create an access request for data products using:
@@ -302,6 +307,8 @@ subscription = data_mesh_consumer.request_access_to_product(
 )
 print(subscription.get('SubscriptionId')
 ```
+
+You can also use [examples/2\_consumer\_request\_access.py](examples/2_consumer_request_access.py) as an example to build your own application.
 
 ### Step 4: Grant Access to the Consumer
 
@@ -353,6 +360,8 @@ approval = data_mesh_producer.approve_access_request(
 )
 ```
 
+You can also use [examples/3\_grant\_data\_product\_access.py](examples/3_grant_data_product_access.py) as an example to build your own application.
+
 ### Step 5: Import Permissions to Consumer Account
 
 Permissions have been granted, but the Consumer must allow those grants to be imported into their account:
@@ -360,10 +369,6 @@ Permissions have been granted, but the Consumer must allow those grants to be im
 ```python
 import logging
 from data_mesh_util import DataMeshConsumer as dmc
-
-'''
-Script to create a data product for an existing Glue Catalog Object
-'''
 
 data_mesh_account = 'insert data mesh account number here'
 aws_region = 'the AWS region you are working in'
@@ -387,6 +392,7 @@ data_mesh_consumer.finalize_subscription(
 	subscription_id=subscription_id
 )
 ```
+You can also use [examples/4\_finalize\_subscription.py](examples/4_finalize_subscription.py)  as an example to build your own application.
 
 ---
 Amazon Web Services, 2021 All rights reserved.
