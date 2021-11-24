@@ -514,7 +514,8 @@ class DataMeshProducer:
         :param notes:
         :return:
         '''
-        return self._subscription_tracker.update_grants(
+        # TODO implement permissions changes to lake formation
+        self._subscription_tracker.update_grants(
             subscription_id=subscription_id, permitted_grants=grant_permissions,
             notes=notes
         )
