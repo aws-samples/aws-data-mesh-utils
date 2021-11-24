@@ -9,9 +9,9 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(ins
 sys.path.insert(0, parent_dir)
 
 import example_utils
-from src.data_mesh_util.lib.constants import *
-import src.data_mesh_util.lib.utils as utils
-from src.data_mesh_util import DataMeshAdmin as dmu
+from data_mesh_util.lib.constants import *
+import data_mesh_util.lib.utils as utils
+from data_mesh_util import DataMeshAdmin as dmu
 
 warnings.filterwarnings(action="ignore", message="unclosed", category=ResourceWarning)
 

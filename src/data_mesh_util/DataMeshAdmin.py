@@ -1,13 +1,8 @@
 import boto3
-import os
 import sys
 import logging
-import time
-
 import botocore.session
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "resource"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
 from data_mesh_util.lib.constants import *
 import data_mesh_util.lib.utils as utils
 from data_mesh_util.lib.SubscriberTracker import SubscriberTracker

@@ -9,8 +9,8 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(ins
 sys.path.insert(0, parent_dir)
 
 import example_utils
-from src.data_mesh_util.lib.constants import *
-from src.data_mesh_util import DataMeshConsumer as dmc
+from data_mesh_util.lib.constants import *
+from data_mesh_util import DataMeshConsumer as dmc
 
 warnings.filterwarnings(action="ignore", message="unclosed", category=ResourceWarning)
 

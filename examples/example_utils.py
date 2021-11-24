@@ -2,10 +2,6 @@ import json
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../src/resource"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../src/lib"))
-
 import data_mesh_util.lib.utils as utils
 from data_mesh_util.lib.constants import *
 

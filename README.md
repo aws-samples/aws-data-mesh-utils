@@ -276,7 +276,43 @@ data_mesh_producer.create_data_products(
 
 ### Step 5: Request access to a Data Product Table
 
-As a consumer, you can gain view public metadata by assuming
+As a consumer, you can gain view public metadata by assuming the `DataMeshReadOnly` role in the mesh account. You can then create an access request for data products using:
+
+```python
+import logging
+from data_mesh_util import DataMeshConsumer as dmc
+
+'''
+Script to create a data product for an existing Glue Catalog Object
+'''
+
+data_mesh_account = 'insert data mesh account number here
+aws_region = 'insert the AWS Region you want to install into'
+consumer_credentials = {
+    "AccountId": "The Producer AWS Account ID",
+    "AccessKeyId": "Your access key",
+    "SecretAccessKey": "Your secret key",
+    "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
+}
+data_mesh_consumer = dmp.DataMeshConsumer(
+    data_mesh_account_id=data_mesh_account,
+    log_level=logging.DEBUG,
+    region_name=aws_region,
+    use_credentials=consumer_credentials
+)
+
+owner_account_id = 'the account ID of the producer who owns the objects'
+database_name = 'the name of the database containing the objects to subscribe to'
+tables = 'The table name or regular expression that matches multiple tables'
+request_permissions = ['The list of permissions you are asking for, such as', 'SELECT', 'DESCRIBE']
+
+subscription = data_mesh_consumer.request_access_to_product(
+    owner_account_id=owner_account_id,
+    database_name=database_name,
+    tables=tables,
+    request_permissions=request_permissions
+)
+```
 
 ---
 Amazon Web Services, 2021 All rights reserved.

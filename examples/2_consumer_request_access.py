@@ -3,14 +3,14 @@ import warnings
 import sys
 import os
 import inspect
+import logging
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 sys.path.insert(0, parent_dir)
 
 import example_utils
-from src.data_mesh_util import DataMeshConsumer as dmc
-from src.data_mesh_util.lib.constants import *
-import logging
+from data_mesh_util import DataMeshConsumer as dmc
+from data_mesh_util.lib.constants import *
 
 warnings.filterwarnings(action="ignore", message="unclosed", category=ResourceWarning)
 

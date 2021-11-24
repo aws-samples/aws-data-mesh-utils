@@ -9,9 +9,6 @@ import botocore.session
 import shortuuid
 import logging
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "resource"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
-
 from data_mesh_util.lib.ApiAutomator import ApiAutomator
 from data_mesh_util.lib.SubscriberTracker import *
 
