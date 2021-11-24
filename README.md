@@ -191,10 +191,6 @@ import logging
 from data_mesh_util.lib.constants import *
 from data_mesh_util import DataMeshMacros as data_mesh_macros
 
-'''
-Script to configure an set of accounts as central data mesh. Mesh credentials must have AdministratorAccess and Data Lake Admin permissions.
-'''
-
 data_mesh_account = 'insert data mesh account number here
 aws_region = 'the AWS region you are working in'
 mesh_credentials = {
@@ -234,11 +230,7 @@ Creating a data product replicates Glue Catalog metadata from the Producer's acc
 import logging
 from data_mesh_util import DataMeshProducer as dmp
 
-'''
-Script to create a data product for an existing Glue Catalog Object
-'''
-
-data_mesh_account = 'insert data mesh account number here
+data_mesh_account = 'insert data mesh account number here'
 aws_region = 'the AWS region you are working in'
 producer_credentials = {
     "AccountId": "The Producer AWS Account ID",
@@ -282,14 +274,10 @@ As a consumer, you can gain view public metadata by assuming the `DataMeshReadOn
 import logging
 from data_mesh_util import DataMeshConsumer as dmc
 
-'''
-Script to create a data product for an existing Glue Catalog Object
-'''
-
-data_mesh_account = 'insert data mesh account number here
+data_mesh_account = 'insert data mesh account number here'
 aws_region = 'the AWS region you are working in'
 consumer_credentials = {
-    "AccountId": "The Producer AWS Account ID",
+    "AccountId": "The Consumer AWS Account ID",
     "AccessKeyId": "Your access key",
     "SecretAccessKey": "Your secret key",
     "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
@@ -323,11 +311,7 @@ In this step, you will grant permissions to the Consumer who has requested acces
 import logging
 from data_mesh_util import DataMeshProducer as dmp
 
-'''
-Script to create a data product for an existing Glue Catalog Object
-'''
-
-data_mesh_account = 'insert data mesh account number here
+data_mesh_account = 'insert data mesh account number here'
 aws_region = 'the AWS region you are working in'
 producer_credentials = {
     "AccountId": "The Producer AWS Account ID",
@@ -345,10 +329,20 @@ use_credentials=producer_credentials
 # get the pending access requests
 pending_requests = data_mesh_producer.list_pending_access_requests()
 
-subscription_id = 'The subscription ID that the Consumer created and returned from list_pending_access_requests()'
-grant_permissions = ['List of permissions to grant to the Consumer',"What they requested will be in pending_requests.get('Subscriptions')[...].get('RequestedGrants')",'such as','INSERT','ALTER','SELECT']
-grantable_permissions = ['List of permissions the consumer can pass on','usally only','DESCRIBE','or','SELECT']
-approval_notes = 'String value to associate with the approval'
+# pick one to approve
+choose_subscription = pending_requests.get('Subscriptions')[0]
+
+# The subscription ID that the Consumer created and returned from list_pending_access_requests()
+subscription_id = choose_subscription.get('SubscriptionId')
+
+# Set the permissions to grant to the Consumer - in this case whatever they asked for
+grant_permissions = choose_subscription.get('RequestedGrants')
+
+# List of permissions the consumer can pass on. Usally only DESCRIBE or SELECT
+grantable_permissions = ['DESCRIBE','SELECT']
+
+# String value to associate with the approval
+approval_notes = 'Enjoy!'
 
 # approve access requested
 approval = data_mesh_producer.approve_access_request(
@@ -360,6 +354,39 @@ approval = data_mesh_producer.approve_access_request(
 ```
 
 ### Step 5: Import Permissions to Consumer Account
+
+Permissions have been granted, but the Consumer must allow those grants to be imported into their account:
+
+```python
+import logging
+from data_mesh_util import DataMeshConsumer as dmc
+
+'''
+Script to create a data product for an existing Glue Catalog Object
+'''
+
+data_mesh_account = 'insert data mesh account number here'
+aws_region = 'the AWS region you are working in'
+consumer_credentials = {
+    "AccountId": "The Consumer AWS Account ID",
+    "AccessKeyId": "Your access key",
+    "SecretAccessKey": "Your secret key",
+    "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
+}
+data_mesh_consumer = dmp.DataMeshConsumer(
+    data_mesh_account_id=data_mesh_account,
+    log_level=logging.DEBUG,
+    region_name=aws_region,
+    use_credentials=consumer_credentials
+)
+
+# use the subscription ID which has been requested
+subscription_id = 'GUxwswjEFRzgwow8zqVwGC'
+
+data_mesh_consumer.finalize_subscription(
+	subscription_id=subscription_id
+)
+```
 
 ---
 Amazon Web Services, 2021 All rights reserved.
