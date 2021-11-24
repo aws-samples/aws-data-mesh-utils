@@ -110,7 +110,7 @@ Please make sure not to add this file to any publicly shared resources such as g
 
 To get started with Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
 
-### Step 1 - Install the Data Mesh
+### Step 1.0 - Install the Data Mesh
 
 Installing the Data Mesh Utility functions must be run as 1/an AWS Administrative account, which 2/has Lake Formation Data Lake Admin permissions granted. This activity will only be done once. When you have granted the needed permissions, run the Data Mesh Installer with:
 
@@ -140,7 +140,7 @@ mesh_admin = dmu.DataMeshAdmin(
 mesh_admin.initialize_mesh_account()
 ```
 
-### Step 2 - Enable an AWS Account as a Producer
+### Step 1.1 - Enable an AWS Account as a Producer
 
 You must configure an account to act as a Producer in order to offer data shares to other accounts. This is an administrative task that is run once per AWS Account. The configured credentials must have AdministratorAccess as well as Lake Formation Data Lake Admin. To setup an account as a Producer, run:
 
@@ -154,7 +154,7 @@ Script to configure an set of accounts as central data mesh. Mesh credentials mu
 '''
 
 data_mesh_account = 'insert data mesh account number here
-aws_region = 'insert the AWS Region you want to install into'
+aws_region = 'the AWS region you are working in'
 mesh_credentials = {
     "AccessKeyId": "your access key",
     "SecretAccessKey": "your secret key",
@@ -182,7 +182,7 @@ mesh_macros.bootstrap_account(
 )
 ```
 
-### Step 3: Enable an AWS Account as a Consumer
+### Step 1.2: Enable an AWS Account as a Consumer
 
 Accounts can be both producers and consumers, so you may wish to run this step against the account used above. You may also have Accounts that are Consumer only, and cannot create data shares. This step is only run once per AWS Account and must be run using credentials that have AdministratorAccess as well as being Lake Formation Data Lake Admin:
 
@@ -196,7 +196,7 @@ Script to configure an set of accounts as central data mesh. Mesh credentials mu
 '''
 
 data_mesh_account = 'insert data mesh account number here
-aws_region = 'insert the AWS Region you want to install into'
+aws_region = 'the AWS region you are working in'
 mesh_credentials = {
     "AccessKeyId": "your access key",
     "SecretAccessKey": "your secret key",
@@ -226,7 +226,7 @@ mesh_macros.bootstrap_account(
 
 The above Steps 2 and 3 can be run for any number of accounts that you require to act as Producers or Consumers. If you want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call to `bootstrap_account()`.
 
-### Step 4: Create a Data Product
+### Step 2: Create a Data Product
 
 Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. To create a data product:
 
@@ -239,7 +239,7 @@ Script to create a data product for an existing Glue Catalog Object
 '''
 
 data_mesh_account = 'insert data mesh account number here
-aws_region = 'insert the AWS Region you want to install into'
+aws_region = 'the AWS region you are working in'
 producer_credentials = {
     "AccountId": "The Producer AWS Account ID",
     "AccessKeyId": "Your access key",
@@ -274,7 +274,7 @@ data_mesh_producer.create_data_products(
 )
 ```
 
-### Step 5: Request access to a Data Product Table
+### Step 3: Request access to a Data Product Table
 
 As a consumer, you can gain view public metadata by assuming the `DataMeshReadOnly` role in the mesh account. You can then create an access request for data products using:
 
@@ -287,7 +287,7 @@ Script to create a data product for an existing Glue Catalog Object
 '''
 
 data_mesh_account = 'insert data mesh account number here
-aws_region = 'insert the AWS Region you want to install into'
+aws_region = 'the AWS region you are working in'
 consumer_credentials = {
     "AccountId": "The Producer AWS Account ID",
     "AccessKeyId": "Your access key",
@@ -312,7 +312,54 @@ subscription = data_mesh_consumer.request_access_to_product(
     tables=tables,
     request_permissions=request_permissions
 )
+print(subscription.get('SubscriptionId')
 ```
+
+### Step 4: Grant Access to the Consumer
+
+In this step, you will grant permissions to the Consumer who has requested access:
+
+```python
+import logging
+from data_mesh_util import DataMeshProducer as dmp
+
+'''
+Script to create a data product for an existing Glue Catalog Object
+'''
+
+data_mesh_account = 'insert data mesh account number here
+aws_region = 'the AWS region you are working in'
+producer_credentials = {
+    "AccountId": "The Producer AWS Account ID",
+    "AccessKeyId": "Your access key",
+    "SecretAccessKey": "Your secret key",
+    "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
+}
+data_mesh_producer = dmp.DataMeshProducer(
+    data_mesh_account_id=data_mesh_account,
+    log_level=logging.DEBUG,
+    region_name=aws_region,
+use_credentials=producer_credentials
+)
+
+# get the pending access requests
+pending_requests = data_mesh_producer.list_pending_access_requests()
+
+subscription_id = 'The subscription ID that the Consumer created and returned from list_pending_access_requests()'
+grant_permissions = ['List of permissions to grant to the Consumer',"What they requested will be in pending_requests.get('Subscriptions')[...].get('RequestedGrants')",'such as','INSERT','ALTER','SELECT']
+grantable_permissions = ['List of permissions the consumer can pass on','usally only','DESCRIBE','or','SELECT']
+approval_notes = 'String value to associate with the approval'
+
+# approve access requested
+approval = data_mesh_producer.approve_access_request(
+    request_id=subscription_id,
+    grant_permissions=grant_permissions,
+    grantable_permissions=grantable_permissions,
+    decision_notes=approval_notes
+)
+```
+
+### Step 5: Import Permissions to Consumer Account
 
 ---
 Amazon Web Services, 2021 All rights reserved.
