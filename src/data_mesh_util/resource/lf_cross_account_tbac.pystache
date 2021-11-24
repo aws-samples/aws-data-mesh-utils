@@ -1,0 +1,23 @@
+{
+  "Effect": "Allow",
+  "Action": [
+    "glue:*"
+  ],
+  "Principal": {
+    "AWS": [
+      "{{consumer_account_id}}"
+    ]
+  },
+  "Resource": [
+    {{#table_list}}
+    "{{.}}",
+    {{/table_list}}
+    "arn:aws:glue:{{region}}:{{producer_account_id}}:database/{{database_name}}",
+    "arn:aws:glue:{{region}}:{{producer_account_id}}:catalog"
+  ],
+  "Condition": {
+    "Bool": {
+      "glue:EvaluatedByLakeFormationTags": true
+    }
+  }
+}

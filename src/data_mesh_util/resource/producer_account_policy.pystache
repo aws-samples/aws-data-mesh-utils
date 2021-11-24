@@ -1,0 +1,59 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ProducerAccess0",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ProducerAccess2",
+            "Effect": "Allow",
+            "Action": [
+                "glue:GetTables",
+                "glue:GetTable",
+                "glue:GetCrawler",
+                "glue:GetDatabases",
+                "glue:GetPartitions",
+                "glue:GetDatabase",
+                "glue:CreateDatabase",
+                "glue:CreateTable",
+                "glue:CreateTables",
+                "glue:CreateCrawler",
+                "glue:Update*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ProducerAccess3",
+            "Effect": "Allow",
+            "Action": [
+                "ram:GetResourceShareInvitations",
+                "ram:AcceptResourceShareInvitation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ProducerAccess4",
+            "Effect": "Allow",
+            "Action": [
+                "lakeformation:GrantPermissions",
+                "lakeformation:GetResourceLFTags",
+                "lakeformation:GetLFTag"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ProducerAccess5",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetBucketPolicy",
+                "s3:PutBucketPolicy"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

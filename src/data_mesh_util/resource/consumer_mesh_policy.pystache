@@ -1,0 +1,77 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "glue:GetDatabase",
+                "glue:GetDatabases",
+                "glue:GetPartition",
+                "glue:GetPartitions",
+                "glue:GetSchema",
+                "glue:GetSchemaByDefinition",
+                "glue:GetSchemaVersion",
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:GetTableVersion",
+                "glue:GetTableVersions",
+                "glue:GetTags",
+                "glue:ListRegistries",
+                "glue:ListSchemas",
+                "glue:ListSchemaVersions",
+                "glue:QuerySchemaVersionMetadata",
+                "glue:SearchTables",
+                "lakeformation:DescribeResource",
+                "lakeformation:ListPermissions",
+                "lakeformation:ListResources"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:DescribeTable",
+                "dynamodb:PutItem",
+                "dynamodb:Update*",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:GetItem"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions",
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions/index/AwsDataMeshSubscriptions-Subscriber",
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions/index/AwsDataMeshSubscriptions-Owner"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "ram:List*",
+                "ram:Get*",
+                "ram:AcceptResourceShareInvitation",
+                "ram:RejectResourceShareInvitation",
+                "ram:Associate*",
+                "ram:Disassociate*"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "ProducerPolicy4",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:GetRolePolicy",
+                "iam:PutRolePolicy"
+            ],
+            "Resource": [
+                "arn:aws:iam::{{data_mesh_account_id}}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess",
+                "arn:aws:iam::{{data_mesh_account_id}}:role/AwsDataMesh/DataMeshAdminReadOnly"
+            ]
+        }
+    ]
+}

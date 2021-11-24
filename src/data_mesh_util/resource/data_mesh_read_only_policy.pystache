@@ -1,0 +1,36 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "glue:GetDatabase",
+                "glue:GetDatabases",
+                "glue:GetPartition",
+                "glue:GetPartitions",
+                "glue:GetSchema",
+                "glue:GetSchemaByDefinition",
+                "glue:GetSchemaVersion",
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:GetTableVersion",
+                "glue:GetTableVersions",
+                "glue:GetTags",
+                "glue:ListRegistries",
+                "glue:ListSchemas",
+                "glue:ListSchemaVersions",
+                "glue:QuerySchemaVersionMetadata",
+                "glue:SearchTables",
+                "lakeformation:DescribeResource",
+                "lakeformation:ListPermissions",
+                "lakeformation:ListResources"
+            ],
+            "Resource": [
+                "arn:aws:glue:*::catalog",
+                "arn:aws:glue:*::*/*",
+                "arn:aws:lakeformation:*::*/*"
+            ]
+        }
+    ]
+}

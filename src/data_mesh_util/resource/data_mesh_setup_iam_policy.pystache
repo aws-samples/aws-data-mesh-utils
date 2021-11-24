@@ -1,0 +1,19 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreatePolicy",
+                "iam:AttachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:CreateRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::{{data_mesh_account_id}}:role/AwsDataMesh/",
+                "arn:aws:iam::{{data_mesh_account_id}}:policy/AwsDataMesh/"
+            ]
+        }
+    ]
+}

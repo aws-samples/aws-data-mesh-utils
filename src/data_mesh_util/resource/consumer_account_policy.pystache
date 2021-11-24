@@ -1,0 +1,95 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "glue:BatchCreatePartition",
+                "glue:CreateDatabase",
+                "glue:CreateJob",
+                "glue:CreatePartition",
+                "glue:CreateSchema",
+                "glue:CreateTable",
+                "glue:GetDatabase",
+                "glue:GetDatabases",
+                "glue:GetPartition",
+                "glue:GetPartitions",
+                "glue:GetSchema",
+                "glue:GetSchemaByDefinition",
+                "glue:GetSchemaVersion",
+                "glue:GetTable",
+                "glue:GetTables",
+                "glue:GetTableVersion",
+                "glue:GetTableVersions",
+                "glue:GetTags",
+                "glue:ImportCatalogToGlue",
+                "glue:ListRegistries",
+                "glue:ListSchemas",
+                "glue:ListSchemaVersions",
+                "glue:PutResourcePolicy",
+                "glue:PutSchemaVersionMetadata",
+                "glue:QuerySchemaVersionMetadata",
+                "glue:RegisterSchemaVersion",
+                "glue:SearchTables",
+                "glue:TagResource",
+                "glue:UpdateDatabase",
+                "glue:UpdatePartition",
+                "glue:UpdateSchema",
+                "glue:UpdateTable",
+                "lakeformation:DescribeResource",
+                "lakeformation:GrantPermissions",
+                "lakeformation:ListPermissions",
+                "lakeformation:ListResources",
+                "lakeformation:RegisterResource",
+                "lakeformation:UpdateResource"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:DescribeTable",
+                "dynamodb:PutItem",
+                "dynamodb:Update*",
+                "dynamodb:Query",
+                "dynamodb:GetItem"
+            ],
+            "Resource": [
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions",
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions/index/AwsDataMeshSubscriptions-Subscriber",
+                "arn:aws:dynamodb:*:{{data_mesh_account_id}}:table/AwsDataMeshSubscriptions/index/AwsDataMeshSubscriptions-Owner"
+            ]
+        },
+        {
+            "Sid": "VisualEditor2",
+            "Effect": "Allow",
+            "Action": [
+                "ram:List*",
+                "ram:Get*",
+                "ram:CreateResourceShare",
+                "ram:AcceptResourceShareInvitation",
+                "ram:RejectResourceShareInvitation",
+                "ram:Associate*",
+                "ram:Disassociate*"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "ProducerPolicy4",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetRole",
+                "iam:GetRolePolicy",
+                "iam:PutRolePolicy"
+            ],
+            "Resource": [
+                "arn:aws:iam::{{data_mesh_account_id}}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess",
+                "arn:aws:iam::{{data_mesh_account_id}}:role/AwsDataMesh/DataMeshAdminReadOnly"
+            ]
+        }
+    ]
+}

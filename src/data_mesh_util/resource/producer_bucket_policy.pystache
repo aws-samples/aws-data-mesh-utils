@@ -1,0 +1,17 @@
+{
+  "Sid": "{{sid}}",
+  "Action": [
+    "s3:Get*",
+    "s3:List*"
+  ],
+  "Effect": "Allow",
+  "Resource": [
+    "arn:aws:s3:::{{access_path}}",
+    "arn:aws:s3:::{{access_path}}/*"
+  ],
+  "Principal": {
+    "AWS": [
+      "arn:aws:iam::{{account_id}}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"
+    ]
+  }
+}
