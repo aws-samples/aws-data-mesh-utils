@@ -472,7 +472,7 @@ class DataMeshProducer:
                 self._logger.info(ram_shares)
 
             # apply a glue catalog resource policy allowing the consumer to access objects by tag
-            self.add_principal_to_glue_resource_policy(
+            self._add_principal_to_glue_resource_policy(
                 database_name=subscription.get(DATABASE_NAME),
                 tables=subscription.get(TABLE_ARNS),
                 add_principal=subscription.get(SUBSCRIBER_PRINCIPAL)
@@ -484,7 +484,7 @@ class DataMeshProducer:
             permitted_grants=grant_permissions, notes=decision_notes, ram_shares=ram_shares, table_arns=table_arns
         )
 
-    def add_principal_to_glue_resource_policy(self, database_name: str, tables: list, add_principal: str):
+    def _add_principal_to_glue_resource_policy(self, database_name: str, tables: list, add_principal: str):
         self._mesh_automator.update_glue_catalog_resource_policy(
             region=self._current_region,
             database_name=database_name,

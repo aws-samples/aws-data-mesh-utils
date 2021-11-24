@@ -433,16 +433,29 @@ class SubscriberTracker:
         else:
             # build the filter expression
             filter_expression = self._build_filter_expression(
-                {OWNER_PRINCIPAL: owner_id, SUBSCRIBER_PRINCIPAL: principal_id, DATABASE_NAME: database_name,
-                 TABLE_NAME: tables, REQUESTED_GRANTS: includes_grants})
+                {
+                    OWNER_PRINCIPAL: owner_id,
+                    SUBSCRIBER_PRINCIPAL: principal_id,
+                    DATABASE_NAME: database_name,
+                    TABLE_NAME: tables,
+                    REQUESTED_GRANTS: includes_grants
+                })
             _add_arg("FilterExpression", filter_expression)
 
             response = self._table.scan(**args)
             return self._format_list_response(response)
 
     def _format_list_response(self, response) -> dict:
+        response_items = []
+
+        # filter out values not relevant to the requestor
+        for i in response.get('Items'):
+            del i[STATUS]
+            del i[OWNER_PRINCIPAL]
+
+            response_items.append(i)
         out = {
-            'Subscriptions': response.get('Items')
+            'Subscriptions': response_items
         }
         lek = 'LastEvaluatedKey'
         if lek in response:

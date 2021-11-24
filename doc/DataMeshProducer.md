@@ -8,6 +8,7 @@ The `DataMeshProducer.py` library provides functions to assist data __Producers_
 * [`deny_access_request`](#deny_access_request)
 * [`update_subscription_permissions`](#update_subscription)
 * [`delete_subscription`](#delete_subscription)
+* [`get_data_product`](#get_data_product)
 
 ## Method Detail
 
@@ -45,21 +46,78 @@ create_data_products(
 
 #### Return Type
 
-None
+dict
+
+#### Response Syntax
+
+```
+{
+	'DatabaseName': str,
+	'Tables': [
+		'SourceTable': str,
+		'LinkTable': str,
+	]
+}
+```
 
 #### Response Structure
+
+* (dict)
+	* `DatabaseName`: The name of the database created
+	* `Tables`: List of Tables created in the mesh account
+		* `SourceTable`: The table that was shared to the data mesh
+		* `LinkTable`: The resource link that is shared back to the producer Account
 
 ---
 
 ### list\_pending\_access\_requests
 
+This method will return a list of requests made by Consumers to access to products owned by the calling principal which have not yet been approved, denied, or deleted.
+
 #### Request Syntax
+
+```python
+list_pending_access_requests()
+
+```
 
 #### Parameters
 
+None
+
 #### Return Type
 
+dict
+
+#### Response Syntax
+
+```
+{
+	'Subscriptions': [
+		{
+		  "SubscriptionId": str,
+		  "DatabaseName": str,		  
+		  "TableName": list<string>,
+		  "RequestedGrants": list<string>,  
+		  "SubscriberPrincipal": str,
+		  "CreationDate": str,		  
+		  "CreatedBy": str
+		}
+	]
+}
+```
+
 #### Response Structure
+
+* (dict)
+	* `Subscriptions`: List of pending subscriptions
+		* `SubscriptionId`: The ID assigned to the Subscription request
+		* `DatabaseName`: The name of the database containing shared objects
+		* `TableName`: List of table names being requested
+		* `RequestedGrants`: Grants requested by the Consumer
+		* `SubscriberPrincipal`: The AWS Account Number of the requesting Consumer
+		* `CreationDate`: Date the request was made, in `YYYY-MM-DD HH:MI:SS` format
+		* `CreatedBy`: The Identity of the Principal who requested access.
 
 ---
 
@@ -70,6 +128,8 @@ None
 #### Parameters
 
 #### Return Type
+
+#### Response Syntax
 
 #### Response Structure
 
@@ -83,6 +143,8 @@ None
 
 #### Return Type
 
+#### Response Syntax
+
 #### Response Structure
 
 ---
@@ -94,6 +156,8 @@ None
 #### Parameters
 
 #### Return Type
+
+#### Response Syntax
 
 #### Response Structure
 
@@ -107,4 +171,21 @@ None
 
 #### Return Type
 
+#### Response Syntax
+
 #### Response Structure
+
+---
+
+### get\_data\_product
+
+#### Request Syntax
+
+#### Parameters
+
+#### Return Type
+
+#### Response Syntax
+
+#### Response Structure
+
