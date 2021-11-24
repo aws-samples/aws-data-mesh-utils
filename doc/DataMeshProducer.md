@@ -6,7 +6,7 @@ The `DataMeshProducer.py` library provides functions to assist data __Producers_
 * [`list_pending_access_requests`](#list_pending_access_requests)
 * [`approve_access_request`](#approve_access_request)
 * [`deny_access_request`](#deny_access_request)
-* [`update_subscription_permissions`](#update_subscription)
+* [`update_subscription_permissions`](#update_subscription_permissions)
 * [`delete_subscription`](#delete_subscription)
 * [`get_data_product`](#get_data_product)
 
@@ -123,11 +123,29 @@ dict
 
 ### approve\_access\_request
 
+Approves a subscription request raised by a Consumer. During this grant, the permissions can match what was requested, or overridden.
+
 #### Request Syntax
+
+```python
+approve_access_request(
+	request_id: str,
+	grant_permissions: list = None,
+	grantable_permissions: list = None,
+	decision_notes: str = None
+)
+```
 
 #### Parameters
 
+* `request_id`: The Subscription Request that is being approved
+* `grant_permissions`: The permissions to be granted to the Consumer. If None, then all requested permissions will be granted.
+* `grantable_permissions`: The permissions which the Consumer can grant to other principals within their AWS Account. If None, then all `grant_permissions` will be grantable.
+* `decision_notes`: String value attached to the Subscription containing information about the approval.
+
 #### Return Type
+
+None
 
 #### Response Syntax
 
@@ -137,11 +155,25 @@ dict
 
 ### deny\_access\_request
 
+Marks a requested subscription from a Consumer as deleted. No grants are made and no objects are shared.
+
 #### Request Syntax
+
+```python
+deny_access_request(
+	request_id: str,
+	decision_notes: str = None
+)
+```
 
 #### Parameters
 
+* `request_id`: The ID of the Subscription being denied
+* `decision_notes`: String value indicating why the Subscription was denied.
+
 #### Return Type
+
+None
 
 #### Response Syntax
 
@@ -149,13 +181,29 @@ dict
 
 ---
 
-### update\_subscription
+### update\_subscription\_permissions
+
+Method allowing a Producer to change the permissions granted to a Consumer.
 
 #### Request Syntax
 
+```python
+update_subscription_permissions(
+	subscription_id: str, 
+	grant_permissions: list, 
+	notes: str
+)
+```
+
 #### Parameters
 
+* `subscription_id`: The ID of the Subscription being modified
+* `grant_permissions`: The permissions that will be set on the shared objects after update
+* `notes`: String value associated with the permissions modification
+
 #### Return Type
+
+None
 
 #### Response Syntax
 
@@ -165,11 +213,25 @@ dict
 
 ### delete\_subscription
 
+Tears down a granted Subscription so it can no longer be used by the Consumer. The record of the Subscription is retained for future auditing.
+
 #### Request Syntax
+
+```python
+delete_subscription(
+	subscription_id: str, 
+	reason: str
+)
+```
 
 #### Parameters
 
+* `subscription_id`: The ID of the Subscription being deleted
+* `reason`: String value associated with the deletion.
+
 #### Return Type
+
+None
 
 #### Response Syntax
 
@@ -179,13 +241,43 @@ dict
 
 ### get\_data\_product
 
+Fetches information from the system about a set of tables from a given database in the Data Mesh.
+
 #### Request Syntax
+
+```python
+get_data_product(
+	database_name: str, 
+	table_name_regex: str
+)
+```
 
 #### Parameters
 
+* `database_name`: The Database Name in the mesh to retrieve tables from
+* `table_name_regex`: String value or regular expression matching one or more tables to retrieve
+
 #### Return Type
+
+list
 
 #### Response Syntax
 
+```
+[
+	{
+		'Database': str,
+		'TableName': str,
+		'Location': str
+	}
+]
+```
+
 #### Response Structure
+
+* (list)
+	* (dict)
+		* `DatabaseName`: The name of the database matched
+		* `TableName`: The name of the table matched
+		* `Location`: S3 Location of the Table
 
