@@ -25,6 +25,7 @@ DATABASE_NAME = 'DatabaseName'
 TABLE_NAME = 'TableName'
 REQUESTED_GRANTS = 'RequestedGrants'
 PERMITTED_GRANTS = 'PermittedGrants'
+GRANTABLE_GRANTS = 'GrantableGrants'
 TABLE_ARNS = 'GrantedTableARNs'
 RAM_SHARES = 'RamShares'
 NOTES = 'Notes'
@@ -493,27 +494,37 @@ class SubscriberTracker:
             notes=reason
         )
 
-    def update_grants(self, subscription_id: str, permitted_grants: list, notes: str):
+    def update_grants(self, subscription_id: str, permitted_grants: list, notes: str, grantable_grants: list = None):
+        set_expressions = [
+            "#permitted = :permitted"
+        ]
+        expression_attribute_names = {
+            "#permitted": PERMITTED_GRANTS,
+            "#notes": NOTES
+        }
+        expression_attribute_values = {
+            ":permitted": permitted_grants,
+            ":notes": {notes}
+        }
+
+        if grantable_grants is not None:
+            set_expressions.append("#grantable = :grantable")
+            expression_attribute_names["#grantable"] = GRANTABLE_GRANTS
+            expression_attribute_values[":grantable"] = grantable_grants
+
         args = {
             "Key": {
                 SUBSCRIPTION_ID: subscription_id
             },
-            "UpdateExpression": "SET #permitted = :permitted ADD #notes :notes",
-            "ExpressionAttributeNames": {
-                "#permitted": PERMITTED_GRANTS,
-                "#notes": NOTES
-            },
-            "ExpressionAttributeValues": {
-                ":permitted": permitted_grants,
-                ":notes": {notes}
-            }
+            "UpdateExpression": f"SET {','.join(set_expressions)} ADD #notes :notes",
+            "ExpressionAttributeNames": expression_attribute_names,
+            "ExpressionAttributeValues": expression_attribute_values
         }
 
         return self._handle_update(args)
 
     def update_status(self, subscription_id: str, status: str, table_arns: list, permitted_grants: list = None,
-                      notes: str = None,
-                      ram_shares: dict = None):
+                      grantable_grants: list = None, notes: str = None, ram_shares: dict = None):
         '''
         Updates the status of a subscription. Valid transitions are:
         PENDING->ACTIVE
@@ -540,40 +551,54 @@ class SubscriberTracker:
         elif status == STATUS_PENDING:
             expected = status_attr.eq(STATUS_DELETED)
 
-        args = {
-            "Key": {
-                SUBSCRIPTION_ID: subscription_id
-            },
-            "UpdateExpression": "SET #status = :status, #permitted = :permitted, #table_arns = :table_arns",
-            "ExpressionAttributeNames": {
-                "#status": STATUS,
-                "#permitted": PERMITTED_GRANTS,
-                "#table_arns": TABLE_ARNS
-            },
-            "ExpressionAttributeValues": {
-                ":status": status,
-                ":table_arns": table_arns
-            },
-            "ConditionExpression": expected
+        set_expressions = [
+            "#status = :status",
+            "#permitted = :permitted",
+            "#table_arns = :table_arns",
+            "#grantable = :grantable",
+        ]
+
+        expression_attribute_names = {
+            "#status": STATUS,
+            "#permitted": PERMITTED_GRANTS,
+            "#grantable": GRANTABLE_GRANTS,
+            "#table_arns": TABLE_ARNS
+        }
+        expression_attribute_values = {
+            ":status": status,
+            ":table_arns": table_arns,
+            ":grantable": grantable_grants
         }
 
         # add the permitted grants if they are provided
         if permitted_grants is not None and len(permitted_grants) > 0:
-            args["ExpressionAttributeValues"][":permitted"] = permitted_grants
+            expression_attribute_values[":permitted"] = permitted_grants
         else:
             # permitted grants will be set to whatever was previously requested
             current_sub = self.get_subscription(subscription_id=subscription_id)
-            args["ExpressionAttributeValues"][":permitted"] = current_sub.get(REQUESTED_GRANTS)
+            expression_attribute_values[":permitted"] = current_sub.get(REQUESTED_GRANTS)
 
         if ram_shares is not None:
-            args["UpdateExpression"] = "%s %s" % (args["UpdateExpression"], ",#ram = :ram")
-            args["ExpressionAttributeNames"]["#ram"] = RAM_SHARES
-            args["ExpressionAttributeValues"][":ram"] = ram_shares
+            set_expressions.append("#ram = :ram")
+            expression_attribute_names["#ram"] = RAM_SHARES
+            expression_attribute_values[":ram"] = ram_shares
 
         # add the notes field as a set if we got any
+        add_clause = ""
         if notes is not None:
-            args["UpdateExpression"] = "%s %s" % (args["UpdateExpression"], " ADD #notes :notes")
-            args["ExpressionAttributeNames"]["#notes"] = NOTES
-            args["ExpressionAttributeValues"][":notes"] = {notes}
+            add_clause = "ADD #notes :notes"
+            expression_attribute_names["#notes"] = NOTES
+            expression_attribute_values[":notes"] = {notes}
+
+        update_expression = f"SET {','.join(set_expressions)} {add_clause}".strip()
+        args = {
+            "Key": {
+                SUBSCRIPTION_ID: subscription_id
+            },
+            "UpdateExpression": update_expression,
+            "ExpressionAttributeNames": expression_attribute_names,
+            "ExpressionAttributeValues": expression_attribute_values,
+            "ConditionExpression": expected
+        }
 
         return self._handle_update(args)

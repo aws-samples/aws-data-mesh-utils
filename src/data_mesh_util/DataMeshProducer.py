@@ -394,6 +394,7 @@ class DataMeshProducer:
         permissions to grant to the specified principal.
         :param request_id:
         :param grant_permissions:
+        :param grantable_permissions
         :param decision_notes:
         :return:
         '''
@@ -479,10 +480,10 @@ class DataMeshProducer:
             )
 
         # update the subscription to reflect the changes
-        # TODO add ability to include grantable_grants to the subscription status
         self._subscription_tracker.update_status(
             subscription_id=request_id, status=STATUS_ACTIVE,
-            permitted_grants=grant_permissions, notes=decision_notes, ram_shares=ram_shares, table_arns=table_arns
+            permitted_grants=grant_permissions, grantable_grants=grantable_permissions, notes=decision_notes,
+            ram_shares=ram_shares, table_arns=table_arns
         )
 
     def _add_principal_to_glue_resource_policy(self, database_name: str, tables: list, add_principal: str):
@@ -507,7 +508,8 @@ class DataMeshProducer:
             notes=decision_notes
         )
 
-    def update_subscription_permissions(self, subscription_id: str, grant_permissions: list, notes: str):
+    def update_subscription_permissions(self, subscription_id: str, grant_permissions: list, notes: str,
+                                        grantable_permissions: list = None):
         '''
         Update the permissions on a subscription
         :param subscription_id:
@@ -517,7 +519,7 @@ class DataMeshProducer:
         '''
         # TODO implement permissions changes to lake formation
         self._subscription_tracker.update_grants(
-            subscription_id=subscription_id, permitted_grants=grant_permissions,
+            subscription_id=subscription_id, permitted_grants=grant_permissions, grantable_grants=grantable_permissions,
             notes=notes
         )
 

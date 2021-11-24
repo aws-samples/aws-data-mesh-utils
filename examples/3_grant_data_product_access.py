@@ -35,12 +35,13 @@ class Step3():
     def setUp(self) -> None:
         warnings.filterwarnings("ignore", category=ResourceWarning)
 
-    def grant_access_request(self, subscription_id: str, grant_permissions: list, approval_notes: str):
+    def grant_access_request(self, subscription_id: str, grant_permissions: list, grantable_permissions: list,
+                             approval_notes: str):
         # approve access from the producer
         approval = self._mgr.approve_access_request(
             request_id=subscription_id,
             grant_permissions=grant_permissions,
-            grantable_permissions=grant_permissions,
+            grantable_permissions=grantable_permissions,
             decision_notes=approval_notes
         )
 
@@ -51,8 +52,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--subscription_id', dest='subscription_id', required=True)
     parser.add_argument('--grant_permissions', nargs="+", dest='grant_permissions', required=True)
-    parser.add_argument('--approval_notes', dest='approval_notes', required=True)
+    parser.add_argument('--grantable_permissions', nargs="+", dest='grantable_permissions', required=False)
+    parser.add_argument('--approval_notes', dest='approval_notes', required=False)
 
     args = parser.parse_args()
     print(Step3().grant_access_request(subscription_id=args.subscription_id, grant_permissions=args.grant_permissions,
+                                       grantable_permissions=args.grantable_permissions,
                                        approval_notes=args.approval_notes))
