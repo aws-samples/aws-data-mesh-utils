@@ -285,7 +285,7 @@ dict
 
 #### Response Structure
 
-* `Type`: The type of access request created - one of Database or Table
+* `Type`: The type of access request created - one of DATABASE or TABLE
 * `Database`: The name of the database for which a subscription has been created
 * `Table`: Optional name of a table for which the subscription has been created
 

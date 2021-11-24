@@ -36,8 +36,6 @@ class SubType(Enum):
     DATA_PRODUCT = 3
     DOMAIN = 4
 
-    # TODO implement __str__ method to return a user friendly name when printing
-
 
 def _generate_id():
     return shortuuid.uuid()
@@ -316,7 +314,7 @@ class SubscriberTracker:
 
         def _return():
             return {
-                "Type": subscription_type,
+                "Type": subscription_type.name,
                 sub_type[0]: sub_type[1],
                 SUBSCRIPTION_ID: item.get(SUBSCRIPTION_ID)
             }
