@@ -401,15 +401,11 @@ class DataMeshAdmin:
 
         return iam_details
 
-    def initialize_consumer_account(self, crawler_role_arn: str = None):
+    def initialize_consumer_account(self):
         '''
         Sets up an AWS Account to act as a Data Consumer from the central Data Mesh Account. This method should be invoked
         by an Administrator of the Consumer Account. Creates IAM Role & Policy which allows an end user to assume the
         DataMeshAdminConsumer Role and subscribe to products.
         :return:
         '''
-        return self._initialize_account_as(type=CONSUMER, crawler_role_arn=crawler_role_arn)
-
-    def enable_crawler_passrole(self, crawler_role_arn: str, target_role: str) -> None:
-        self._automator.enable_crawler_role(crawler_role_arn=crawler_role_arn,
-                                            grant_to_role_name=target_role)
+        return self._initialize_account_as(type=CONSUMER, crawler_role_arn=None)

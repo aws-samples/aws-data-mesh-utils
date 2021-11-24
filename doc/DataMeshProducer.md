@@ -1,6 +1,27 @@
-# Data Mesh Producer Library
+# Data Mesh Producer
 
-The `DataMeshProducer.py` library provides functions to assist data __Producers__ to create and manage __Data Products__. The following methods are avialable:
+The `DataMeshProducer.py` class provides functions to assist data __Producers__ to create and manage __Data Products__. 
+
+### Creating a Data Mesh Producer Instance
+
+#### Request Syntax
+
+```python
+DataMeshProducer(
+	data_mesh_account_id: str, 
+	region_name: str = 'us-east-1', 
+	log_level: str = "INFO",
+	use_creds=None
+)                 
+```
+
+#### Parameters
+
+* `data_mesh_account_id`: The AWS Account ID to use as the central Data Mesh Account in the region
+* `region_name`: The short AWS Region Name in which you want to execute Producer functions
+* `log_level`: The level of information you want to see when executing. Based upon python [`logging`](https://docs.python.org/3/library/logging.html), values include `INFO`, `DEBUG`, `ERROR`, etc.
+
+The following methods are avialable:
 
 * [`create_data_products`](#create_data_products)
 * [`list_pending_access_requests`](#list_pending_access_requests)
