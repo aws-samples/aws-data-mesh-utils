@@ -712,80 +712,197 @@ class ApiAutomator:
 
         return table.get('Table')
 
-    def lf_grant_permissions(self, data_mesh_account_id: str, principal: str, database_name: str,
-                             table_name: str = None,
-                             permissions: list = ['ALL'],
-                             grantable_permissions: list = ['ALL']):
+    def lf_batch_revoke_permissions(self,
+                                    data_mesh_account_id: str,
+                                    consumer_account_id: str,
+                                    permissions: list,
+                                    database_name: str,
+                                    grantable_permissions: list = None,
+                                    table_list: list = None) -> int:
         lf_client = self._get_client('lakeformation')
 
-        try:
-            args = {
-                "CatalogId": data_mesh_account_id,
+        entries = []
+
+        # separate out the permissions which are table vs those which are column level
+        table_perms = None
+        column_perms = None
+        grantable_table_perms = None
+        grantable_column_perms = None
+
+        entries = []
+        for t in table_list:
+            entries.extend(self._create_lf_permissions_entry(
+                data_mesh_account_id=data_mesh_account_id,
+                target_account_id=consumer_account_id,
+                database_name=database_name,
+                table_name=t,
+                permissions=permissions,
+                grantable_permissions=grantable_permissions
+            ))
+
+        # add an ID to each entry
+        self._decorate_entries_with_id(entries)
+
+        response = lf_client.batch_revoke_permissions(
+            CatalogId=data_mesh_account_id,
+            Entries=entries
+        )
+        perms_revoked = len(entries)
+        if 'Failures' in response:
+            perms_revoked -= len(response.get('Failures'))
+
+        return perms_revoked
+
+    def _decorate_entries_with_id(self, entries):
+        for entry in entries:
+            entry["Id"] = shortuuid.uuid()
+
+    def _create_lf_permissions_entry(self,
+                                     data_mesh_account_id: str,
+                                     target_account_id: str,
+                                     database_name: str, table_name: str,
+                                     permissions: list,
+                                     grantable_permissions: list = None
+                                     ) -> list:
+        db_entries = []
+        table_entries = []
+        column_entries = []
+
+        log_message = None
+        if table_name is None:
+            # create a db resource
+            entry = {
                 "Principal": {
-                    'DataLakePrincipalIdentifier': principal
+                    'DataLakePrincipalIdentifier': target_account_id
                 },
-                "Permissions": permissions
-            }
-
-            if table_name is not None:
-                db_spec = {
-                    'CatalogId': data_mesh_account_id,
-                    'DatabaseName': database_name
-                }
-                if table_name == "*":
-                    db_spec['TableWildcard'] = {}
-                else:
-                    db_spec['Name'] = table_name
-
-                args["Resource"] = {
-                    'Table': db_spec
-                }
-            else:
-                # create a database grant
-                args['Resource'] = {
+                "Resource": {
                     'Database': {
                         'CatalogId': data_mesh_account_id,
                         'Name': database_name
                     }
-                }
-
-            # always grant describe even if not requested
-            if 'DESCRIBE' not in permissions:
-                permissions.append('DESCRIBE')
-
+                },
+                "Permissions": permissions
+            }
+            log_message = f"{target_account_id} Database {database_name} Permissions:{permissions}"
             if grantable_permissions is not None:
-                args["PermissionsWithGrantOption"] = grantable_permissions
+                entry["PermissionsWithGrantOption"] = grantable_permissions
+                log_message = f"{log_message}, {grantable_permissions} WITH GRANT OPTION"
 
-            self._logger.debug(args)
+            self._logger.info(log_message)
+            db_entries.append(entry)
+        else:
+            # create grants at table and column level depending on what's being granted/revoked
+            if 'SELECT' in permissions:
+                entry = {
+                    "Principal": {
+                        'DataLakePrincipalIdentifier': target_account_id
+                    },
+                    "Resource": {
+                        'TableWithColumns': {
+                            'CatalogId': data_mesh_account_id,
+                            'DatabaseName': database_name,
+                            'Name': table_name,
+                            'ColumnWildcard': {}
+                        }
+                    },
+                    "Permissions": ['SELECT']
+                }
+                log_message = f"{target_account_id} Table {table_name} Column Permissions:{permissions}"
 
-            response = lf_client.grant_permissions(**args)
+                if grantable_permissions is not None and 'SELECT' in grantable_permissions:
+                    entry["PermissionsWithGrantOption"] = grantable_permissions
+                    log_message = f"{log_message}, {grantable_permissions} WITH GRANT OPTION"
 
-            report_t = ""
-            if table_name is not None:
-                report_t = f".{table_name}"
+                column_entries.append(entry)
+                self._logger.info(log_message)
 
-            self._logger.info(
-                f"Granted LakeFormation Permissions {permissions} on {database_name}{report_t} to {principal}")
+            # remove select from remaining permissions
+            other_permissions = list(set(permissions) - set(['SELECT']))
+            other_grantable_permissions = None
+            if grantable_permissions is not None:
+                other_grantable_permissions = list(set(grantable_permissions) - set(['SELECT']))
 
-            return response
-        except lf_client.exceptions.from_code('AlreadyExistsException') as aee:
-            return None
-        except lf_client.exceptions.InvalidInputException as iie:
-            if "Permissions modification is invalid" in str(iie):
-                # this is an error thrown when you try to create the same permissions that already exist :(
-                return None
-            elif "Please revoke permission(s) for IAM_ALLOWED_PRINCIPALS on the table" in str(iie):
-                # this occurs because we are granting any IAM principal to describe the table, which means that the previous creation of the grant is already in place. ignore
-                return None
-            else:
-                self._logger.error(
-                    f"Exception while granting LakeFormation Permissions {permissions} on {database_name}.{table_name} to {principal}")
-                raise iie
-        except Exception as eve:
-            self._logger.error(eve)
-            print(eve)
+            if other_permissions is not None and len(other_permissions) > 0:
+                entry = {
+                    "Principal": {
+                        'DataLakePrincipalIdentifier': target_account_id
+                    },
+                    "Resource": {
+                        'Table': {
+                            'CatalogId': data_mesh_account_id,
+                            'DatabaseName': database_name,
+                            'Name': table_name
+                        }
+                    },
+                    "Permissions": other_permissions
+                }
+                log_message = f"{target_account_id} Table {table_name} Permissions:{other_permissions}"
 
-            raise eve
+                if other_grantable_permissions is not None and len(other_grantable_permissions) > 0:
+                    entry["PermissionsWithGrantOption"] = other_grantable_permissions
+                    log_message = f"{log_message}, {other_grantable_permissions} WITH GRANT OPTION"
+
+                self._logger.info(log_message)
+                table_entries.append(entry)
+
+
+        # create a list of the permissions groups
+        final_entries = []
+        final_entries.extend(table_entries)
+        final_entries.extend(column_entries)
+        final_entries.extend(db_entries)
+
+        return final_entries
+
+    def lf_batch_grant_permissions(self,
+                                   data_mesh_account_id: str,
+                                   target_account_id: str,
+                                   permissions: list,
+                                   database_name: str,
+                                   grantable_permissions: list = None,
+                                   table_list: list = None) -> int:
+        entries = []
+
+        # always grant describe
+        if 'DESCRIBE' not in permissions:
+            permissions.append('DESCRIBE')
+
+        for t in table_list:
+            entries.extend(self._create_lf_permissions_entry(data_mesh_account_id=data_mesh_account_id,
+                                                             target_account_id=target_account_id,
+                                                             database_name=database_name, table_name=t,
+                                                             permissions=permissions,
+                                                             grantable_permissions=grantable_permissions))
+
+        # add an ID to each entry
+        self._decorate_entries_with_id(entries)
+
+        lf_client = self._get_client('lakeformation')
+
+        response = lf_client.batch_grant_permissions(
+            CatalogId=data_mesh_account_id,
+            Entries=entries
+        )
+
+        perms_added = len(entries)
+        if 'Failures' in response:
+            perms_added -= len(response.get('Failures'))
+
+        return perms_added
+
+    def lf_grant_permissions(self, data_mesh_account_id: str, principal: str, database_name: str,
+                             table_name: str = None,
+                             permissions: list = ['ALL'],
+                             grantable_permissions: list = None) -> None:
+        table_list = table_name if isinstance(table_name, list) else [table_name]
+        return self.lf_batch_grant_permissions(
+            data_mesh_account_id=data_mesh_account_id,
+            target_account_id=principal,
+            database_name=database_name,
+            table_list=table_list,
+            permissions=permissions,
+            grantable_permissions=grantable_permissions
+        )
 
     def create_crawler(self, crawler_role: str, database_name: str, table_name: str, s3_location: str,
                        sync_schedule: str, enable_lineage: bool = True):

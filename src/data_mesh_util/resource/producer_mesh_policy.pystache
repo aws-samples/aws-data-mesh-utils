@@ -50,6 +50,8 @@
                 "lakeformation:DescribeResource",
                 "lakeformation:GrantPermissions",
                 "lakeformation:RevokePermissions",
+                "lakeformation:BatchGrantPermissions",
+                "lakeformation:BatchRevokePermissions",
                 "lakeformation:ListPermissions",
                 "lakeformation:ListResources",
                 "lakeformation:GetDataLakeSettings",

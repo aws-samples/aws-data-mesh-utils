@@ -517,11 +517,65 @@ class DataMeshProducer:
         :param notes:
         :return:
         '''
-        # TODO implement permissions changes to lake formation
+        subscription = self._subscription_tracker.get_subscription(subscription_id)
+
+        current_permissions = subscription.get(PERMITTED_GRANTS)
+        current_grantable_permissions = subscription.get(GRANTABLE_GRANTS)
+        if current_grantable_permissions is None:
+            current_grantable_permissions = []
+
+        # calculate the permissions to be added
+        perms_to_add = list(set(grant_permissions) - set(current_permissions))
+        grantable_perms_to_add = []
+        if len(grantable_permissions or '') > 0:
+            grantable_perms_to_add = list(set(grantable_permissions) - set(current_grantable_permissions))
+
+        # cant add grantable permissions without granting them first
+        if len(perms_to_add or '') == 0 and len(grantable_perms_to_add or '') > 0:
+            perms_to_add = grantable_perms_to_add
+
+        permissions_modified = 0
+        if len(perms_to_add or '') > 0:
+            permissions_modified += self._mesh_automator.lf_batch_grant_permissions(
+                data_mesh_account_id=self._data_mesh_account_id,
+                target_account_id=subscription.get(SUBSCRIBER_PRINCIPAL),
+                database_name=subscription.get(DATABASE_NAME),
+                table_list=subscription.get(TABLE_NAME),
+                permissions=perms_to_add,
+                grantable_permissions=grantable_perms_to_add
+            )
+
+        # modify the current permissions to reflect the state of the addition
+        current_permissions.extend(perms_to_add)
+        current_grantable_permissions.extend(grantable_perms_to_add)
+
+        # calculate the permissions to be removed
+        perms_to_remove = list(set(current_permissions) - set(grant_permissions))
+
+        if grantable_permissions is None:
+            grantable_permissions = []
+
+        grantable_perms_to_remove = list(set(current_grantable_permissions) - set(grantable_permissions))
+
+        # revoke permissions at the lakeformation level
+        if len(perms_to_remove or '') > 0:
+            permissions_modified += self._mesh_automator.lf_batch_revoke_permissions(
+                data_mesh_account_id=self._data_mesh_account_id,
+                consumer_account_id=subscription.get(SUBSCRIBER_PRINCIPAL),
+                database_name=subscription.get(DATABASE_NAME),
+                table_list=subscription.get(TABLE_NAME),
+                permissions=perms_to_remove,
+                grantable_permissions=grantable_perms_to_remove
+            )
+
         self._subscription_tracker.update_grants(
-            subscription_id=subscription_id, permitted_grants=grant_permissions, grantable_grants=grantable_permissions,
+            subscription_id=subscription_id,
+            permitted_grants=grant_permissions,
+            grantable_grants=grantable_permissions,
             notes=notes
         )
+
+        self._logger.info(f"Modified {permissions_modified} Permissions")
 
     def get_subscription(self, request_id: str) -> dict:
         return self._subscription_tracker.get_subscription(subscription_id=request_id)
