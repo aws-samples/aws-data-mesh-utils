@@ -595,54 +595,27 @@ class DataMeshProducer:
             lf_client = self._data_mesh_session.client('lakeformation')
 
             entries = []
+            # generate the list of permissions at table and column level
             for t in subscription.get(TABLE_NAME):
-                perms_minus_select = subscription.get(PERMITTED_GRANTS).copy()
-                del perms_minus_select['SELECT']
+                entries.extend(self._mesh_automator.create_lf_permissions_entry(
+                    data_mesh_account_id=self._data_mesh_account_id,
+                    target_account_id=subscription.get(SUBSCRIBER_PRINCIPAL),
+                    database_name=subscription.get(DATABASE_NAME),
+                    table_name=t,
+                    permissions=subscription.get(PERMITTED_GRANTS),
+                    grantable_permissions=subscription.get(GRANTABLE_GRANTS),
+                    target_batch=True
+                ))
 
-                # revoke table level permissions minus SELECT
-                entries.append({
-                    'Id': shortuuid.uuid(),
-                    'Principal': {
-                        'DataLakePrincipalIdentifier': subscription.get(SUBSCRIBER_PRINCIPAL)
-                    },
-                    'Resource': {
-                        'Table': {
-                            'DatabaseName': subscription.get(DATABASE_NAME),
-                            'Name': t
-                        }
-                    },
-                    'Permissions': perms_minus_select
-                })
-                # revoke column level select permission
-                if 'SELECT' in subscription.get(PERMITTED_GRANTS):
-                    entries.append({
-                        'Id': shortuuid.uuid(),
-                        'Principal': {
-                            'DataLakePrincipalIdentifier': subscription.get(SUBSCRIBER_PRINCIPAL)
-                        },
-                        'Resource': {
-                            'TableWithColumns': {
-                                'DatabaseName': subscription.get(DATABASE_NAME),
-                                'Name': t,
-                                'ColumnWildcard': {}
-                            }
-                        },
-                        'Permissions': ['SELECT']
-                    })
-
-            # add the database grant
-            entries.append({
-                'Id': shortuuid.uuid(),
-                'Principal': {
-                    'DataLakePrincipalIdentifier': subscription.get(SUBSCRIBER_PRINCIPAL)
-                },
-                'Resource': {
-                    'Database': {
-                        'Name': subscription.get(DATABASE_NAME)
-                    }
-                },
-                'Permissions': ['DESCRIBE']
-            })
+            # add the database DESCRIBE grant
+            entries.extend(self._mesh_automator.create_lf_permissions_entry(
+                data_mesh_account_id=self._data_mesh_account_id,
+                target_account_id=subscription.get(SUBSCRIBER_PRINCIPAL),
+                database_name=subscription.get(DATABASE_NAME),
+                permissions=['DESCRIBE'],
+                grantable_permissions=['DESCRIBE'],
+                target_batch=True
+            ))
 
             lf_client.batch_revoke_permissions(
                 Entries=entries

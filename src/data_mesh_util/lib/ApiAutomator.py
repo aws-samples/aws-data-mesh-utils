@@ -723,25 +723,16 @@ class ApiAutomator:
 
         entries = []
 
-        # separate out the permissions which are table vs those which are column level
-        table_perms = None
-        column_perms = None
-        grantable_table_perms = None
-        grantable_column_perms = None
-
-        entries = []
         for t in table_list:
-            entries.extend(self._create_lf_permissions_entry(
+            entries.extend(self.create_lf_permissions_entry(
                 data_mesh_account_id=data_mesh_account_id,
                 target_account_id=consumer_account_id,
                 database_name=database_name,
                 table_name=t,
                 permissions=permissions,
-                grantable_permissions=grantable_permissions
+                grantable_permissions=grantable_permissions,
+                target_batch=True
             ))
-
-        # add an ID to each entry
-        self._decorate_entries_with_id(entries)
 
         response = lf_client.batch_revoke_permissions(
             CatalogId=data_mesh_account_id,
@@ -753,17 +744,14 @@ class ApiAutomator:
 
         return perms_revoked
 
-    def _decorate_entries_with_id(self, entries):
-        for entry in entries:
-            entry["Id"] = shortuuid.uuid()
-
-    def _create_lf_permissions_entry(self,
-                                     data_mesh_account_id: str,
-                                     target_account_id: str,
-                                     database_name: str, table_name: str,
-                                     permissions: list,
-                                     grantable_permissions: list = None
-                                     ) -> list:
+    def create_lf_permissions_entry(self,
+                                    data_mesh_account_id: str,
+                                    target_account_id: str,
+                                    database_name: str, table_name: str,
+                                    permissions: list,
+                                    grantable_permissions: list = None,
+                                    target_batch: bool = False
+                                    ) -> list:
         db_entries = []
         table_entries = []
         column_entries = []
@@ -783,6 +771,9 @@ class ApiAutomator:
                 },
                 "Permissions": permissions
             }
+            if target_batch is True:
+                entry["Id"] = shortuuid.uuid()
+
             log_message = f"{target_account_id} Database {database_name} Permissions:{permissions}"
             if grantable_permissions is not None:
                 entry["PermissionsWithGrantOption"] = grantable_permissions
@@ -845,7 +836,6 @@ class ApiAutomator:
                 self._logger.info(log_message)
                 table_entries.append(entry)
 
-
         # create a list of the permissions groups
         final_entries = []
         final_entries.extend(table_entries)
@@ -868,14 +858,12 @@ class ApiAutomator:
             permissions.append('DESCRIBE')
 
         for t in table_list:
-            entries.extend(self._create_lf_permissions_entry(data_mesh_account_id=data_mesh_account_id,
-                                                             target_account_id=target_account_id,
-                                                             database_name=database_name, table_name=t,
-                                                             permissions=permissions,
-                                                             grantable_permissions=grantable_permissions))
-
-        # add an ID to each entry
-        self._decorate_entries_with_id(entries)
+            entries.extend(self.create_lf_permissions_entry(data_mesh_account_id=data_mesh_account_id,
+                                                            target_account_id=target_account_id,
+                                                            database_name=database_name, table_name=t,
+                                                            permissions=permissions,
+                                                            grantable_permissions=grantable_permissions,
+                                                            target_batch=True))
 
         lf_client = self._get_client('lakeformation')
 
