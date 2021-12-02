@@ -47,7 +47,7 @@ class Step0_5():
             consumer_admin = dmu.DataMeshAdmin(data_mesh_account_id=self._account_ids.get(MESH),
                                                region_name=self._region,
                                                log_level=logging.DEBUG, use_credentialss=use_credentials)
-            consumer_admin.initialize_consumer_account(crawler_role_arn=crawler_role_arn)
+            consumer_admin.initialize_consumer_account()
             mesh_admin.enable_account_as_consumer(account_id)
 
 
