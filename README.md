@@ -321,16 +321,16 @@ from data_mesh_util import DataMeshProducer as dmp
 data_mesh_account = 'insert data mesh account number here'
 aws_region = 'the AWS region you are working in'
 producer_credentials = {
-    "AccountId": "The Producer AWS Account ID",
-    "AccessKeyId": "Your access key",
-    "SecretAccessKey": "Your secret key",
-    "SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
+	"AccountId": "The Producer AWS Account ID",
+	"AccessKeyId": "Your access key",
+	"SecretAccessKey": "Your secret key",
+	"SessionToken": "Optional - a session token, if you are using an IAM Role & temporary credentials"
 }
 data_mesh_producer = dmp.DataMeshProducer(
-    data_mesh_account_id=data_mesh_account,
-    log_level=logging.DEBUG,
-    region_name=aws_region,
-use_credentials=producer_credentials
+   data_mesh_account_id=data_mesh_account,
+   log_level=logging.DEBUG,
+   region_name=aws_region,
+	use_credentials=producer_credentials
 )
 
 # get the pending access requests
