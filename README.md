@@ -112,13 +112,15 @@ Please make sure not to add this file to any publicly shared resources such as g
 
 To install AWS Data Mesh Utils, install from Pypi:
 
+### Step 0.0 - Install Data Mesh Utils Helper Library
+
 ```
 pip install aws-data-mesh-utils
 ```
 
-To start using Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
-
 ### Step 1.0 - Install the Data Mesh
+
+To start using Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
 
 Installing the Data Mesh Utility functions must be run as 1/an AWS Administrative account, which 2/has Lake Formation Data Lake Admin permissions granted. This activity will only be done once. When you have granted the needed permissions, run the Data Mesh Installer with:
 
