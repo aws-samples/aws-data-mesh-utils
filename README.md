@@ -2,6 +2,8 @@
 
 The AWS Data Mesh Helper library provides automation around the most common tasks that customers need to perform to implement a data mesh architecture on AWS. A data mesh on AWS uses a central AWS Account (the mesh account) to store the metadata associated with __Data Products__ created by data __Producers__. This allows other AWS Accounts to act as __Consumers__, and to request __Subscriptions__, which must be approved by __Producers__. Upon approval, the approved grants are provided to the __Consumer__ and can be imported into their AWS Account.
 
+[View aws-data-mesh-utils on Pypi](https://pypi.org/project/aws-data-mesh-utils/1.0/)
+
 ### Definition of Terms
 
 * __Data Mesh__ - An architectural pattern which provides a centralised environment in which the data sharing contract is managed. Data stays within __Producer__ AWS Accounts, and they own the lifecycle of granting __Subscriptions__.
@@ -108,7 +110,13 @@ Please make sure not to add this file to any publicly shared resources such as g
 
 ## Getting Started
 
-To get started with Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
+To install AWS Data Mesh Utils, install from Pypi:
+
+```
+pip install aws-data-mesh-utils
+```
+
+To start using Data Mesh Utils, you must first configure an AWS Account to act as the data mesh account. We recommend one data mesh account per AWS Region, keeping regional catalogs separated to support data residency requirements. However, you may choose to only have a single data mesh account for your entire business.
 
 ### Step 1.0 - Install the Data Mesh
 
