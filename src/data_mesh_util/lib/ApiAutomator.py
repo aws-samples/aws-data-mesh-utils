@@ -760,6 +760,7 @@ class ApiAutomator:
         if table_name is None:
             # create a db resource
             entry = {
+                "Id": shortuuid.uuid(),
                 "Principal": {
                     'DataLakePrincipalIdentifier': target_account_id
                 },
@@ -785,6 +786,7 @@ class ApiAutomator:
             # create grants at table and column level depending on what's being granted/revoked
             if 'SELECT' in permissions:
                 entry = {
+                    "Id": shortuuid.uuid(),
                     "Principal": {
                         'DataLakePrincipalIdentifier': target_account_id
                     },
@@ -815,6 +817,7 @@ class ApiAutomator:
 
             if other_permissions is not None and len(other_permissions) > 0:
                 entry = {
+                    "Id": shortuuid.uuid(),
                     "Principal": {
                         'DataLakePrincipalIdentifier': target_account_id
                     },
@@ -858,12 +861,14 @@ class ApiAutomator:
             permissions.append('DESCRIBE')
 
         for t in table_list:
-            entries.extend(self.create_lf_permissions_entry(data_mesh_account_id=data_mesh_account_id,
-                                                            target_account_id=target_account_id,
-                                                            database_name=database_name, table_name=t,
-                                                            permissions=permissions,
-                                                            grantable_permissions=grantable_permissions,
-                                                            target_batch=True))
+            entries.extend(self.create_lf_permissions_entry(
+                data_mesh_account_id=data_mesh_account_id,
+                target_account_id=target_account_id,
+                database_name=database_name, table_name=t,
+                permissions=permissions,
+                grantable_permissions=grantable_permissions,
+                target_batch=True)
+            )
 
         lf_client = self._get_client('lakeformation')
 
