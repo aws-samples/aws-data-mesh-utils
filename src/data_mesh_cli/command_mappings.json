@@ -1,0 +1,43 @@
+{
+  "create-data-product": {
+    "Context": "PRODUCER",
+    "RequiredArgs": [
+      "source_database_name",
+      "table_name_regex"
+    ],
+    "OptionalArgs": [
+      "create_public_metadata",
+      "domain",
+      "data_product_name",
+      "sync_mesh_catalog_schedule",
+      "sync_mesh_crawler_role_arn",
+      "expose_data_mesh_db_name",
+      "expose_table_references_with_suffix",
+      "use_original_table_name"
+    ]
+  },
+  "approve-subscription": {
+    "Context": "PRODUCER"
+  },
+  "deny-subscription": {
+    "Context": "PRODUCER"
+  },
+  "modify-subscription": {
+    "Context": "PRODUCER"
+  },
+  "request-access": {
+    "Context": "CONSUMER"
+  },
+  "import-subscription": {
+    "Context": "CONSUMER"
+  },
+  "list-subscriptions": {
+    "Context": "CONSUMER"
+  },
+  "install-mesh-objects": {
+    "Context": "ADMIN"
+  },
+  "enable-account": {
+    "Context": "ADMIN"
+  }
+}
