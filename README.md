@@ -145,7 +145,7 @@ mesh_admin = dmu.DataMeshAdmin(
     data_mesh_account_id=data_mesh_account,
     region_name=aws_region,
     log_level=logging.DEBUG,
-    use_creds=credentials
+    use_credentials=credentials
 )
 mesh_admin.initialize_mesh_account()
 ```

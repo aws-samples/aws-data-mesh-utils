@@ -92,10 +92,16 @@ class DataMeshConsumer:
         :param request_permissions:
         :return:
         '''
+        table_list = None
+        if isinstance(tables, list):
+            table_list = tables
+        else:
+            table_list = [tables]
+
         return self._subscription_tracker.create_subscription_request(
             owner_account_id=owner_account_id,
             database_name=database_name,
-            tables=tables,
+            tables=table_list,
             principal=self._current_account.get('Account'),
             request_grants=request_permissions,
             suppress_object_validation=True

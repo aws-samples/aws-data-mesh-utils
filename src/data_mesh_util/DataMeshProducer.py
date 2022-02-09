@@ -414,7 +414,14 @@ class DataMeshProducer:
         ram_shares = {}
 
         table_arns = []
-        for t in tables:
+
+        table_list = None
+        if isinstance(tables, list):
+            table_list = tables
+        else:
+            table_list = [tables]
+
+        for t in table_list:
             # resolve the original database name
             original_db = subscription.get(DATABASE_NAME).replace(f"-{self._data_producer_account_id}", "")
 
