@@ -17,6 +17,15 @@ from data_mesh_util.DataMeshProducer import DataMeshProducer
 from data_mesh_util.DataMeshConsumer import DataMeshConsumer
 from data_mesh_util.DataMeshMacros import DataMeshMacros
 
+_printer = pprint.PrettyPrinter(indent=4)
+
+_context_mapping = {
+    'Producer': DataMeshProducer,
+    'Consumer': DataMeshConsumer,
+    'Mesh': DataMeshAdmin,
+    'Macro': DataMeshMacros
+}
+
 
 def _usage(message: str, all_commands: dict = None) -> None:
     print(message)
@@ -93,6 +102,35 @@ class DataMeshCli:
         if caller_name is not None:
             self._caller_name = caller_name
 
+    def _print_command_usage(self, command_name: str, method_name: str, class_object) -> None:
+        print(f"{self._caller_name} {command_name} <args>")
+
+        # load the constructor spec
+        constructor = inspect.getattr_static(class_object, "__init__")
+        constructor_args = inspect.getfullargspec(constructor)
+        required, optional = _extract_reqopt_params(constructor_args)
+
+        # add the implicit support for credentials file
+        optional.append("credentials_file")
+
+        # load the arg spec
+        method = inspect.getattr_static(class_object, method_name)
+        method_args = inspect.getfullargspec(method)
+        x, y = _extract_reqopt_params(method_args)
+        required.extend(x)
+        optional.extend(y)
+
+        def print_arg_list(args:list) ->None:
+            for arg in args:
+                print(f"      * {arg}")
+
+        print("   Required Arguments:")
+        print_arg_list(required)
+        print("   Optional Arguments:")
+        print_arg_list(optional)
+
+        sys.exit(126)
+
     def run(self):
         if len(sys.argv) == 1:
             _usage("No Valid Arguments Supplied")
@@ -103,6 +141,12 @@ class DataMeshCli:
 
         # load the command context
         context = command_data.get('Context')
+
+        # load the class for the context
+        class_object = _context_mapping.get(context)
+
+        if len(sys.argv) == 3 and sys.argv[2].lower() == 'help':
+            self._print_command_usage(command_name, command_data.get("Method"), class_object)
 
         # create an argument parser with the caller name listed so we get a nice usage string
         parser = argparse.ArgumentParser(prog=self._caller_name)
@@ -131,14 +175,8 @@ class DataMeshCli:
             constructor_args['region_name'] = region
             constructor_args['use_credentials'] = credentials_dict.get(context)
 
-        if context == 'Producer':
-            cls = DataMeshProducer(**constructor_args)
-        elif context == 'Consumer':
-            cls = DataMeshConsumer(**constructor_args)
-        elif context == 'Mesh':
-            cls = DataMeshAdmin(**constructor_args)
-        else:
-            cls = DataMeshMacros(**constructor_args)
+        # create an instance of the loaded class for the invoked command
+        cls = class_object(**constructor_args)
 
         # load the class method to be invoked
         method_name = command_data.get("Method")
@@ -167,8 +205,7 @@ class DataMeshCli:
             response = method(**method_args)
 
             if response is not None:
-                printer = pprint.PrettyPrinter(indent=4)
-                printer.pprint(response)
+                _printer.pprint(response)
 
             sys.exit(0)
         except Exception as e:
