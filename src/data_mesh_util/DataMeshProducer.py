@@ -33,7 +33,7 @@ class DataMeshProducer:
     _producer_automator = None
     _mesh_automator = None
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str = "INFO", use_credentials=None):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO", use_credentials=None):
         self._data_mesh_account_id = data_mesh_account_id
 
         if region_name is None:

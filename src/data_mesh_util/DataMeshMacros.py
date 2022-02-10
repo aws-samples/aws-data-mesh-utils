@@ -8,7 +8,7 @@ class DataMeshMacros:
     _log_level = None
     _BOTH = 'Both'
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO"):
         self._data_mesh_account_id = data_mesh_account_id
         self._region = region_name
         self._log_level = log_level

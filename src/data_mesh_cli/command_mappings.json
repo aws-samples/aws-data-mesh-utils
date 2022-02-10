@@ -1,6 +1,7 @@
 {
   "create-data-product": {
-    "Context": "PRODUCER",
+    "Context": "Producer",
+    "Method": "create_data_products",
     "RequiredArgs": [
       "source_database_name",
       "table_name_regex"
@@ -17,27 +18,87 @@
     ]
   },
   "approve-subscription": {
-    "Context": "PRODUCER"
+    "Context": "Producer",
+    "Method": "approve_access_request",
+    "RequiredArgs": [
+      "request_id"
+    ],
+    "OptionalArgs": [
+      "grant_permissions",
+      "grantable_permissions",
+      "decision_notes"
+    ]
   },
   "deny-subscription": {
-    "Context": "PRODUCER"
+    "Context": "Producer",
+    "Method": "deny_access_request",
+    "RequiredArgs": [
+      "request_id"
+    ],
+    "OptionalArgs": [
+      "decision_notes"
+    ]
   },
   "modify-subscription": {
-    "Context": "PRODUCER"
+    "Context": "Producer",
+    "Method": "update_subscription_permissions",
+    "RequiredArgs": [
+      "subscription_id",
+      "grant_permissions",
+      "notes",
+      "decision_notes"
+    ],
+    "OptionalArgs": [
+      "grantable_permissions"
+    ]
   },
   "request-access": {
-    "Context": "CONSUMER"
+    "Context": "Consumer",
+    "Method": "request_access_to_product",
+    "RequiredArgs": [
+      "owner_account_id",
+      "database_name",
+      "request_permissions"
+    ],
+    "OptionalArgs": [
+      "tables"
+    ]
   },
   "import-subscription": {
-    "Context": "CONSUMER"
+    "Context": "Consumer",
+    "Method": "finalize_subscription",
+    "RequiredArgs": [
+      "subscription_id"
+    ],
+    "OptionalArgs": [
+    ]
   },
   "list-subscriptions": {
-    "Context": "CONSUMER"
+    "Context": "Consumer",
+    "Method": "list_product_access",
+    "RequiredArgs": [
+    ],
+    "OptionalArgs": [
+    ]
   },
   "install-mesh-objects": {
-    "Context": "ADMIN"
+    "Context": "Mesh",
+    "Method": "initialize_mesh_account",
+    "RequiredArgs": [
+    ],
+    "OptionalArgs": [
+    ]
   },
   "enable-account": {
-    "Context": "ADMIN"
+    "Context": "Macro",
+    "Method": "bootstrap_account",
+    "RequiredArgs": [
+      "account_type",
+      "mesh_credentials",
+      "account_credentials"
+    ],
+    "OptionalArgs": [
+      "crawler_role_arn"
+    ]
   }
 }

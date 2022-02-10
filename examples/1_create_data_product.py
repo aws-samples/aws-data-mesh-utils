@@ -7,7 +7,7 @@ import inspect
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 sys.path.insert(0, parent_dir)
 
-import example_utils
+import data_mesh_util.lib.utils as utils
 from data_mesh_util.lib.constants import *
 from data_mesh_util import DataMeshProducer as dmp
 from data_mesh_util.lib.SubscriberTracker import *
@@ -21,7 +21,7 @@ class Step1():
     Create a data product. Should be run using credentials for a principal who can assume
     the DataMeshAdminProducer role in the data mesh.
     '''
-    _region, _clients, _account_ids, _creds = example_utils.load_client_info_from_file()
+    _region, _clients, _account_ids, _creds = utils.load_client_info_from_file()
 
     _mgr = dmp.DataMeshProducer(data_mesh_account_id=_account_ids.get(MESH),
                                 log_level=logging.DEBUG,

@@ -30,7 +30,8 @@ class DataMeshConsumer:
     _consumer_automator = None
     _ro_session = None
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str = "INFO", use_credentials=None):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
+                 use_credentials=None):
         if region_name is None:
             raise Exception("Cannot initialize a Data Mesh Consumer without an AWS Region")
         else:
