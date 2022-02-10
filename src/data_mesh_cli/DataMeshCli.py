@@ -95,6 +95,32 @@ def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
     return required_args, opt_args
 
 
+def _add_constructor_args(parser) -> None:
+    parser.add_argument("--data_mesh_account_id", dest="data_mesh_account_id", required=True)
+    parser.add_argument("--region_name", dest="region_name", required=False)
+    parser.add_argument("--log_level", dest="log_level", required=False)
+    parser.add_argument("--use_credentials", dest="use_credentials", required=False)
+    parser.add_argument("--credentials_file", dest="credentials_file", required=False)
+
+
+def _xform_argspec(arg_spec: FullArgSpec) -> list:
+    r_args = arg_spec.args.copy()
+    r_args.reverse()
+    r_defs = list(arg_spec.defaults)
+    r_defs.reverse()
+    arg_list = []
+    for i, arg in enumerate(r_args):
+        if arg != 'self':
+            default_value = None
+            if len(r_defs) - 1 >= i:
+                default_value = r_defs[i]
+
+            arg_list.append((arg, default_value))
+
+    arg_list.reverse()
+    return dict(arg_list)
+
+
 class DataMeshCli:
     _caller_name = "DataMeshCli"
 
@@ -108,26 +134,28 @@ class DataMeshCli:
         # load the constructor spec
         constructor = inspect.getattr_static(class_object, "__init__")
         constructor_args = inspect.getfullargspec(constructor)
+
+        defaults_map = _xform_argspec(constructor_args)
+
         required, optional = _extract_reqopt_params(constructor_args)
 
         # add the implicit support for credentials file
         optional.append("credentials_file")
 
-        # load the arg spec
+        # load the function args
         method = inspect.getattr_static(class_object, method_name)
         method_args = inspect.getfullargspec(method)
         x, y = _extract_reqopt_params(method_args)
         required.extend(x)
         optional.extend(y)
 
-        def print_arg_list(args:list) ->None:
-            for arg in args:
-                print(f"      * {arg}")
-
         print("   Required Arguments:")
-        print_arg_list(required)
+        for arg in required:
+            print(f"      * {arg}")
+
         print("   Optional Arguments:")
-        print_arg_list(optional)
+        for arg in optional:
+            print(f"      * {arg} - default '{defaults_map.get(arg)}'")
 
         sys.exit(126)
 
@@ -152,12 +180,7 @@ class DataMeshCli:
         parser = argparse.ArgumentParser(prog=self._caller_name)
 
         # add constructor args for callable classes
-        parser.add_argument("--data_mesh_account_id", dest="data_mesh_account_id", required=True)
-        parser.add_argument("--region_name", dest="region_name", required=False)
-        parser.add_argument("--log_level", dest="log_level", required=False)
-        parser.add_argument("--use_credentials", dest="use_credentials", required=False)
-        parser.add_argument("--credentials_file", dest="credentials_file", required=False)
-
+        _add_constructor_args(parser)
         constructor_params, _ = parser.parse_known_args(args=sys.argv[2:])
 
         # load the target class for the provide context
