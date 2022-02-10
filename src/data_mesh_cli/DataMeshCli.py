@@ -4,6 +4,7 @@ import json
 import argparse
 import inspect
 from inspect import FullArgSpec
+import pprint
 
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
@@ -65,18 +66,22 @@ def _load_constructor_args(args):
 
 
 def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
-    # count how many required parameters there are
-    required_count = len(args_spec.args) - len(args_spec.defaults)
-
     required_args = []
     opt_args = []
-    if len(args_spec.args) > 1:
-        for i in range(1, required_count):
-            required_args.append(args_spec.args[i])
 
-    if len(args_spec.defaults) > 0:
-        for j in range(len(args_spec.defaults) + 1, 1, -1):
-            opt_args.append(args_spec.args[j])
+    if len(args_spec.args) > 1:
+        # count how many required parameters there are
+        required_count = len(args_spec.args) - len(args_spec.defaults)
+
+        if len(args_spec.args) > 1:
+            # add all required arguments that don't have defaults
+            for i in range(1, required_count):
+                required_args.append(args_spec.args[i])
+
+        # add all default args working from back to front
+        if len(args_spec.defaults) > 0:
+            for j in range(len(args_spec.defaults) + 1, 1, -1):
+                opt_args.append(args_spec.args[j])
 
     return required_args, opt_args
 
@@ -159,7 +164,12 @@ class DataMeshCli:
 
         # call the class method using keyword args
         try:
-            method(**method_args)
+            response = method(**method_args)
+
+            if response is not None:
+                printer = pprint.PrettyPrinter(indent=4)
+                printer.pprint(response)
+
             sys.exit(0)
         except Exception as e:
             print(e)
