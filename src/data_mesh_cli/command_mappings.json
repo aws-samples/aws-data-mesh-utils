@@ -1,104 +1,38 @@
 {
   "create-data-product": {
     "Context": "Producer",
-    "Method": "create_data_products",
-    "RequiredArgs": [
-      "source_database_name",
-      "table_name_regex"
-    ],
-    "OptionalArgs": [
-      "create_public_metadata",
-      "domain",
-      "data_product_name",
-      "sync_mesh_catalog_schedule",
-      "sync_mesh_crawler_role_arn",
-      "expose_data_mesh_db_name",
-      "expose_table_references_with_suffix",
-      "use_original_table_name"
-    ]
+    "Method": "create_data_products"
   },
   "approve-subscription": {
     "Context": "Producer",
-    "Method": "approve_access_request",
-    "RequiredArgs": [
-      "request_id"
-    ],
-    "OptionalArgs": [
-      "grant_permissions",
-      "grantable_permissions",
-      "decision_notes"
-    ]
+    "Method": "approve_access_request"
   },
   "deny-subscription": {
     "Context": "Producer",
-    "Method": "deny_access_request",
-    "RequiredArgs": [
-      "request_id"
-    ],
-    "OptionalArgs": [
-      "decision_notes"
-    ]
+    "Method": "deny_access_request"
   },
   "modify-subscription": {
     "Context": "Producer",
-    "Method": "update_subscription_permissions",
-    "RequiredArgs": [
-      "subscription_id",
-      "grant_permissions",
-      "notes",
-      "decision_notes"
-    ],
-    "OptionalArgs": [
-      "grantable_permissions"
-    ]
+    "Method": "update_subscription_permissions"
   },
   "request-access": {
     "Context": "Consumer",
-    "Method": "request_access_to_product",
-    "RequiredArgs": [
-      "owner_account_id",
-      "database_name",
-      "request_permissions"
-    ],
-    "OptionalArgs": [
-      "tables"
-    ]
+    "Method": "request_access_to_product"
   },
   "import-subscription": {
     "Context": "Consumer",
-    "Method": "finalize_subscription",
-    "RequiredArgs": [
-      "subscription_id"
-    ],
-    "OptionalArgs": [
-    ]
+    "Method": "finalize_subscription"
   },
   "list-subscriptions": {
     "Context": "Consumer",
-    "Method": "list_product_access",
-    "RequiredArgs": [
-    ],
-    "OptionalArgs": [
-    ]
+    "Method": "list_product_access"
   },
   "install-mesh-objects": {
     "Context": "Mesh",
-    "Method": "initialize_mesh_account",
-    "RequiredArgs": [
-    ],
-    "OptionalArgs": [
-    ]
+    "Method": "initialize_mesh_account"
   },
   "enable-account": {
     "Context": "Macro",
-    "Method": "bootstrap_account",
-    "RequiredArgs": [
-      "account_type",
-      "mesh_credentials",
-      "account_credentials"
-    ],
-    "OptionalArgs": [
-      "crawler_role_arn"
-    ]
+    "Method": "bootstrap_account"
   }
 }
