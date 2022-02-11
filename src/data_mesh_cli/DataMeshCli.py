@@ -18,17 +18,19 @@ from data_mesh_util.DataMeshProducer import DataMeshProducer
 from data_mesh_util.DataMeshConsumer import DataMeshConsumer
 from data_mesh_util.DataMeshMacros import DataMeshMacros
 
-_printer = pprint.PrettyPrinter(indent=4)
+USAGE_STATUS = 126
 
-_context_mapping = {
+CONTEXT_MAPPING = {
     'Producer': DataMeshProducer,
     'Consumer': DataMeshConsumer,
     'Mesh': DataMeshAdmin,
     'Macro': DataMeshMacros
 }
 
+_printer = pprint.PrettyPrinter(indent=4)
 
-def _usage(message: str, all_commands: dict = None) -> None:
+
+def _cli_usage(message: str, all_commands: dict = None) -> None:
     print(message)
     print()
     print("aws-data-mesh <command> <args>")
@@ -40,7 +42,7 @@ def _usage(message: str, all_commands: dict = None) -> None:
         print("   Valid Commands:")
         for key in all_commands.keys():
             print(f"      {key}")
-    sys.exit(-1)
+    sys.exit(USAGE_STATUS)
 
 
 def _get_command(command: str) -> dict:
@@ -56,12 +58,18 @@ def _get_command(command: str) -> dict:
     this_command = all_commands.get(command)
 
     if this_command is None:
-        _usage(f"Command \"{command}\" Invalid", all_commands)
+        _cli_usage(f"Command \"{command}\" Invalid", all_commands)
     else:
         return this_command
 
 
-def _load_constructor_args(context, args):
+def _build_constructor_arg_dict(context, args):
+    '''
+    Generate a dict of class constructor arguments and values from the provided Namespace
+    :param context:
+    :param args:
+    :return:
+    '''
     constructor_args = {
         "data_mesh_account_id": args.data_mesh_account_id
     }
@@ -119,11 +127,8 @@ def _add_constructor_args(cls, parser) -> None:
     # get the constructor args for the class
     required, optional, _ = _get_req_opt_constructor_args(cls)
 
-    for arg in required:
-        add(arg, True)
-
-    for arg in optional:
-        add(arg, False)
+    [add(arg, True) for arg in required]
+    [add(arg, False) for arg in optional]
 
     # add the "special" constructor arguments that will be extracted before use
     add("credentials_file", False)
@@ -148,6 +153,11 @@ def _xform_argspec(arg_spec: FullArgSpec) -> list:
 
 
 def _get_req_opt_constructor_args(cls) -> tuple:
+    '''
+    Statically inspect a class's constructor method and return the required, optional, and default value mapping arguments
+    :param cls:
+    :return:
+    '''
     constructor = inspect.getattr_static(cls, "__init__")
     constructor_args = inspect.getfullargspec(constructor)
     return _extract_reqopt_params(constructor_args)
@@ -160,7 +170,7 @@ class DataMeshCli:
         if caller_name is not None:
             self._caller_name = caller_name
 
-    def _print_command_usage(self, command_name: str, method_name: str, cls) -> None:
+    def _command_usage(self, command_name: str, method_name: str, cls) -> None:
         print(f"{self._caller_name} {command_name} <args>")
 
         # get the required, optional and defaults for the class
@@ -187,11 +197,11 @@ class DataMeshCli:
             else:
                 print(f"      * {arg}")
 
-        sys.exit(126)
+        sys.exit(USAGE_STATUS)
 
     def run(self):
         if len(sys.argv) == 1:
-            _usage("No Valid Arguments Supplied")
+            _cli_usage("No Valid Arguments Supplied")
 
         # resolve the supplied command
         command_name = sys.argv[1]
@@ -200,11 +210,11 @@ class DataMeshCli:
         # load the command context
         context = command_data.get('Context')
 
-        # load the class for the context
-        cls = _context_mapping.get(context)
+        # lookup the class for the context
+        cls = CONTEXT_MAPPING.get(context)
 
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
-            self._print_command_usage(command_name, command_data.get("Method"), cls)
+            self._command_usage(command_name, command_data.get("Method"), cls)
 
         # create an argument parser with the caller name listed so we get a nice usage string
         parser = argparse.ArgumentParser(prog=self._caller_name)
@@ -212,7 +222,7 @@ class DataMeshCli:
         # add constructor args for callable classes
         _add_constructor_args(cls, parser)
         constructor_params, _ = parser.parse_known_args(args=sys.argv[2:])
-        constructor_args = _load_constructor_args(context, constructor_params)
+        constructor_args = _build_constructor_arg_dict(context, constructor_params)
 
         # statically load the class method to be invoked and load the required and optional arguments from the function signature
         method_name = command_data.get("Method")
