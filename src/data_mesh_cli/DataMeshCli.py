@@ -11,7 +11,6 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, current_dir)
 sys.path.insert(1, parent_dir)
 
-import data_mesh_util as data_mesh_module
 import data_mesh_util.lib.utils as utils
 from data_mesh_util.DataMeshAdmin import DataMeshAdmin
 from data_mesh_util.DataMeshProducer import DataMeshProducer
@@ -31,6 +30,12 @@ _printer = pprint.PrettyPrinter(indent=4)
 
 
 def _cli_usage(message: str, all_commands: dict = None) -> None:
+    '''
+    Method to print usage information for the cli to standard out
+    :param message:
+    :param all_commands:
+    :return:
+    '''
     print(message)
     print()
     print("aws-data-mesh <command> <args>")
@@ -80,24 +85,6 @@ def _command_usage(caller_name: str, command_name: str, method_name: str, cls) -
             print(f"      * {arg}")
 
     sys.exit(USAGE_STATUS)
-
-
-def _get_command(command: str) -> dict:
-    '''
-    Load the command provided from the command_mappings.json file, indicating context, required, and optional args
-    :param command:
-    :return:
-    '''
-    all_commands = None
-    with open(f'{current_dir}/command_mappings.json', 'r') as commands:
-        all_commands = json.load(commands)
-
-    this_command = all_commands.get(command)
-
-    if this_command is None:
-        _cli_usage(f"Command \"{command}\" Invalid", all_commands)
-    else:
-        return this_command
 
 
 def _build_constructor_arg_dict(context, args):
@@ -225,10 +212,29 @@ def _get_req_opt_constructor_args(cls) -> tuple:
 
 class DataMeshCli:
     _caller_name = "DataMeshCli"
+    _all_commands = None
 
     def __init__(self, caller_name: str = None):
         if caller_name is not None:
             self._caller_name = caller_name
+
+        # load the set of valid commands from the filesystem
+        with open(f'{current_dir}/command_mappings.json', 'r') as commands:
+            self._all_commands = json.load(commands)
+
+    def _get_command(self, command) -> dict:
+        '''
+        Method to fetch a command, or display usage information
+        
+        :param command:
+        :return:
+        '''
+        this_command = self._all_commands.get(command)
+
+        if this_command is None:
+            _cli_usage(f"Command \"{command}\" Invalid", self._all_commands)
+        else:
+            return this_command
 
     def run(self):
         '''
@@ -240,7 +246,7 @@ class DataMeshCli:
 
         # resolve the supplied command
         command_name = sys.argv[1]
-        command_data = _get_command(command_name)
+        command_data = self._get_command(command_name)
 
         # load the command context
         context = command_data.get('Context')
