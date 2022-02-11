@@ -11,6 +11,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, current_dir)
 sys.path.insert(1, parent_dir)
 
+import data_mesh_util as data_mesh_module
 import data_mesh_util.lib.utils as utils
 from data_mesh_util.DataMeshAdmin import DataMeshAdmin
 from data_mesh_util.DataMeshProducer import DataMeshProducer
@@ -60,7 +61,7 @@ def _get_command(command: str) -> dict:
         return this_command
 
 
-def _load_constructor_args(args):
+def _load_constructor_args(context, args):
     constructor_args = {
         "data_mesh_account_id": args.data_mesh_account_id
     }
@@ -70,6 +71,19 @@ def _load_constructor_args(args):
         constructor_args["log_level"] = args.log_level
     else:
         constructor_args["log_level"] = 'INFO'
+
+    # load credentials from args or from credentials file
+    if args.use_credentials is not None:
+        constructor_args['use_credentials'] = args.use_credentials
+
+    if "credentials_file" in args and args.credentials_file is not None:
+        region, clients, account_ids, credentials_dict = utils.load_client_info_from_file(
+            args.credentials_file)
+        constructor_args['region_name'] = region
+        constructor_args['use_credentials'] = credentials_dict.get(context)
+
+    if 'use_credentials' not in constructor_args:
+        print("Loading credentials from boto runtime environment")
 
     return constructor_args
 
@@ -92,17 +106,26 @@ def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
             for j in range(len(args_spec.defaults) + 1, 1, -1):
                 opt_args.append(args_spec.args[j])
 
-    return required_args, opt_args
+        # build a defaults map
+        defaults_map = _xform_argspec(args_spec)
+
+    return required_args, opt_args, defaults_map
 
 
-def _add_constructor_args(parser) -> None:
+def _add_constructor_args(cls, parser) -> None:
     def add(key: str, req: bool) -> None:
         parser.add_argument(f"--{key}", dest=key, required=req)
 
-    add("data_mesh_account_id", True)
-    add("region_name", False)
-    add("log_level", False)
-    add("use_credentials", False)
+    # get the constructor args for the class
+    required, optional, _ = _get_req_opt_constructor_args(cls)
+
+    for arg in required:
+        add(arg, True)
+
+    for arg in optional:
+        add(arg, False)
+
+    # add the "special" constructor arguments that will be extracted before use
     add("credentials_file", False)
 
 
@@ -124,6 +147,12 @@ def _xform_argspec(arg_spec: FullArgSpec) -> list:
     return dict(arg_list)
 
 
+def _get_req_opt_constructor_args(cls) -> tuple:
+    constructor = inspect.getattr_static(cls, "__init__")
+    constructor_args = inspect.getfullargspec(constructor)
+    return _extract_reqopt_params(constructor_args)
+
+
 class DataMeshCli:
     _caller_name = "DataMeshCli"
 
@@ -131,22 +160,17 @@ class DataMeshCli:
         if caller_name is not None:
             self._caller_name = caller_name
 
-    def _print_command_usage(self, command_name: str, method_name: str, class_object) -> None:
+    def _print_command_usage(self, command_name: str, method_name: str, cls) -> None:
         print(f"{self._caller_name} {command_name} <args>")
 
-        # load the constructor spec
-        constructor = inspect.getattr_static(class_object, "__init__")
-        constructor_args = inspect.getfullargspec(constructor)
-
-        defaults_map = _xform_argspec(constructor_args)
-
-        required, optional = _extract_reqopt_params(constructor_args)
+        # get the required, optional and defaults for the class
+        required, optional, defaults_map = _get_req_opt_constructor_args(cls)
 
         # add the implicit support for credentials file
         optional.append("credentials_file")
 
         # load the function args
-        method = inspect.getattr_static(class_object, method_name)
+        method = inspect.getattr_static(cls, method_name)
         method_args = inspect.getfullargspec(method)
         x, y = _extract_reqopt_params(method_args)
         required.extend(x)
@@ -177,60 +201,43 @@ class DataMeshCli:
         context = command_data.get('Context')
 
         # load the class for the context
-        class_object = _context_mapping.get(context)
+        cls = _context_mapping.get(context)
 
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
-            self._print_command_usage(command_name, command_data.get("Method"), class_object)
+            self._print_command_usage(command_name, command_data.get("Method"), cls)
 
         # create an argument parser with the caller name listed so we get a nice usage string
         parser = argparse.ArgumentParser(prog=self._caller_name)
 
         # add constructor args for callable classes
-        _add_constructor_args(parser)
+        _add_constructor_args(cls, parser)
         constructor_params, _ = parser.parse_known_args(args=sys.argv[2:])
+        constructor_args = _load_constructor_args(context, constructor_params)
 
-        # load the target class for the provide context
-        cls = None
-        constructor_args = _load_constructor_args(constructor_params)
-
-        # load credentials from args or from credentials file
-        if constructor_params.use_credentials is not None:
-            constructor_args['use_credentials'] = constructor_params.use_credentials
-
-        credentialset = None
-        if constructor_params.credentials_file is not None:
-            region, clients, account_ids, credentials_dict = utils.load_client_info_from_file(
-                constructor_params.credentials_file)
-            constructor_args['region_name'] = region
-            constructor_args['use_credentials'] = credentials_dict.get(context)
-
-        # create an instance of the loaded class for the invoked command
-        cls = class_object(**constructor_args)
-
-        # load the class method to be invoked
+        # statically load the class method to be invoked and load the required and optional arguments from the function signature
         method_name = command_data.get("Method")
-        method = getattr(cls, method_name)
-
-        # load the required an optional arguments from the function signature
+        method = inspect.getattr_static(cls, method_name)
         method_params = inspect.getfullargspec(method)
-        required_params, optional_params = _extract_reqopt_params(method_params)
+        required_params, optional_params, _ = _extract_reqopt_params(method_params)
 
         def _add_args(params: list, required: bool) -> None:
             for name in params:
                 parser.add_argument(f"--{name}", dest=name, required=required)
 
-        # reset the parser so we can extract just the function args
-        parser = argparse.ArgumentParser(prog=self._caller_name)
+        # reset the parser so we can extract just function args
+        parser = argparse.ArgumentParser(prog=f"{self._caller_name} {command_name}")
         _add_args(required_params, True)
         _add_args(optional_params, False)
-
         args, _ = parser.parse_known_args(args=sys.argv[2:])
 
-        # generate a dict from the required and optional args, and their values
+        # generate a dict from the required and optional args so we can use it for a keywords invocation
         method_args = vars(args)
 
         # call the class method using keyword args
         try:
+            # load live versions of the class and method so they are callable
+            class_object = cls(**constructor_args)
+            method = getattr(class_object, method_name)
             response = method(**method_args)
 
             if response is not None:
@@ -239,7 +246,7 @@ class DataMeshCli:
             sys.exit(0)
         except Exception as e:
             print(e)
-            sys.exit(-1)
+        sys.exit(-1)
 
 
 if __name__ == '__main__':
