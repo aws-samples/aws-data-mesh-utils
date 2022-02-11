@@ -96,11 +96,14 @@ def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
 
 
 def _add_constructor_args(parser) -> None:
-    parser.add_argument("--data_mesh_account_id", dest="data_mesh_account_id", required=True)
-    parser.add_argument("--region_name", dest="region_name", required=False)
-    parser.add_argument("--log_level", dest="log_level", required=False)
-    parser.add_argument("--use_credentials", dest="use_credentials", required=False)
-    parser.add_argument("--credentials_file", dest="credentials_file", required=False)
+    def add(key: str, req: bool) -> None:
+        parser.add_argument(f"--{key}", dest=key, required=req)
+
+    add("data_mesh_account_id", True)
+    add("region_name", False)
+    add("log_level", False)
+    add("use_credentials", False)
+    add("credentials_file", False)
 
 
 def _xform_argspec(arg_spec: FullArgSpec) -> list:
@@ -155,7 +158,10 @@ class DataMeshCli:
 
         print("   Optional Arguments:")
         for arg in optional:
-            print(f"      * {arg} - default '{defaults_map.get(arg)}'")
+            if defaults_map.get(arg) is not None:
+                print(f"      * {arg} - default '{defaults_map.get(arg)}'")
+            else:
+                print(f"      * {arg}")
 
         sys.exit(126)
 
@@ -173,7 +179,7 @@ class DataMeshCli:
         # load the class for the context
         class_object = _context_mapping.get(context)
 
-        if len(sys.argv) == 3 and sys.argv[2].lower() == 'help':
+        if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
             self._print_command_usage(command_name, command_data.get("Method"), class_object)
 
         # create an argument parser with the caller name listed so we get a nice usage string
