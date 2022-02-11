@@ -45,6 +45,43 @@ def _cli_usage(message: str, all_commands: dict = None) -> None:
     sys.exit(USAGE_STATUS)
 
 
+def _command_usage(caller_name: str, command_name: str, method_name: str, cls) -> None:
+    '''
+    Method to print usage information for a single command to standard out
+
+    :param command_name:
+    :param method_name:
+    :param cls:
+    :return:
+    '''
+    print(f"{caller_name} {command_name} <args>")
+
+    # get the required, optional and defaults for the class
+    required, optional, defaults_map = _get_req_opt_constructor_args(cls)
+
+    # add the implicit support for credentials file
+    optional.append("credentials_file")
+
+    # load the function args
+    method = inspect.getattr_static(cls, method_name)
+    method_args = inspect.getfullargspec(method)
+    x, y, _ = _extract_req_opt_params(method_args)
+    required.extend(x)
+    optional.extend(y)
+
+    print("   Required Arguments:")
+    [print(f"      * {arg}") for arg in required]
+
+    print("   Optional Arguments:")
+    for arg in optional:
+        if defaults_map.get(arg) is not None:
+            print(f"      * {arg} - default '{defaults_map.get(arg)}'")
+        else:
+            print(f"      * {arg}")
+
+    sys.exit(USAGE_STATUS)
+
+
 def _get_command(command: str) -> dict:
     '''
     Load the command provided from the command_mappings.json file, indicating context, required, and optional args
@@ -75,6 +112,9 @@ def _build_constructor_arg_dict(context, args):
     }
     if args.region_name is not None:
         constructor_args["region_name"] = args.region_name
+    else:
+        print("Using default region 'us-east-1'")
+
     if args.log_level is not None:
         constructor_args["log_level"] = args.log_level
     else:
@@ -96,7 +136,13 @@ def _build_constructor_arg_dict(context, args):
     return constructor_args
 
 
-def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
+def _extract_req_opt_params(args_spec: FullArgSpec) -> tuple:
+    '''
+    Method to convert an inspect.FullArgSpec object into a list of required parameters, a list of optional parameters,
+    and a dict to map parameter name to default value
+    :param args_spec:
+    :return:
+    '''
     required_args = []
     opt_args = []
 
@@ -115,12 +161,19 @@ def _extract_reqopt_params(args_spec: FullArgSpec) -> tuple:
                 opt_args.append(args_spec.args[j])
 
         # build a defaults map
-        defaults_map = _xform_argspec(args_spec)
+        defaults_map = _convert_argspec_to_default_mapping(args_spec)
 
     return required_args, opt_args, defaults_map
 
 
 def _add_constructor_args(cls, parser) -> None:
+    '''
+    Method which adds the required and optional arguments from a class constructor to a parser
+    :param cls:
+    :param parser:
+    :return:
+    '''
+
     def add(key: str, req: bool) -> None:
         parser.add_argument(f"--{key}", dest=key, required=req)
 
@@ -134,7 +187,14 @@ def _add_constructor_args(cls, parser) -> None:
     add("credentials_file", False)
 
 
-def _xform_argspec(arg_spec: FullArgSpec) -> list:
+def _convert_argspec_to_default_mapping(arg_spec: FullArgSpec) -> dict:
+    '''
+    Converts an inspect.FullArgSpec to a dict that maps a parameter name to its default value
+    :param arg_spec:
+    :return:
+    '''
+
+    # arg specs are end-first indexed with each other, so operate on reversed parameters and defaults
     r_args = arg_spec.args.copy()
     r_args.reverse()
     r_defs = list(arg_spec.defaults)
@@ -160,7 +220,7 @@ def _get_req_opt_constructor_args(cls) -> tuple:
     '''
     constructor = inspect.getattr_static(cls, "__init__")
     constructor_args = inspect.getfullargspec(constructor)
-    return _extract_reqopt_params(constructor_args)
+    return _extract_req_opt_params(constructor_args)
 
 
 class DataMeshCli:
@@ -170,36 +230,11 @@ class DataMeshCli:
         if caller_name is not None:
             self._caller_name = caller_name
 
-    def _command_usage(self, command_name: str, method_name: str, cls) -> None:
-        print(f"{self._caller_name} {command_name} <args>")
-
-        # get the required, optional and defaults for the class
-        required, optional, defaults_map = _get_req_opt_constructor_args(cls)
-
-        # add the implicit support for credentials file
-        optional.append("credentials_file")
-
-        # load the function args
-        method = inspect.getattr_static(cls, method_name)
-        method_args = inspect.getfullargspec(method)
-        x, y = _extract_reqopt_params(method_args)
-        required.extend(x)
-        optional.extend(y)
-
-        print("   Required Arguments:")
-        for arg in required:
-            print(f"      * {arg}")
-
-        print("   Optional Arguments:")
-        for arg in optional:
-            if defaults_map.get(arg) is not None:
-                print(f"      * {arg} - default '{defaults_map.get(arg)}'")
-            else:
-                print(f"      * {arg}")
-
-        sys.exit(USAGE_STATUS)
-
     def run(self):
+        '''
+        Main runner method for the CLI class. All parameters are harvested from sys.argv
+        :return:
+        '''
         if len(sys.argv) == 1:
             _cli_usage("No Valid Arguments Supplied")
 
@@ -214,7 +249,7 @@ class DataMeshCli:
         cls = CONTEXT_MAPPING.get(context)
 
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
-            self._command_usage(command_name, command_data.get("Method"), cls)
+            _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)
 
         # create an argument parser with the caller name listed so we get a nice usage string
         parser = argparse.ArgumentParser(prog=self._caller_name)
@@ -228,7 +263,7 @@ class DataMeshCli:
         method_name = command_data.get("Method")
         method = inspect.getattr_static(cls, method_name)
         method_params = inspect.getfullargspec(method)
-        required_params, optional_params, _ = _extract_reqopt_params(method_params)
+        required_params, optional_params, _ = _extract_req_opt_params(method_params)
 
         def _add_args(params: list, required: bool) -> None:
             for name in params:
@@ -260,5 +295,4 @@ class DataMeshCli:
 
 
 if __name__ == '__main__':
-    cli = DataMeshCli()
-    cli.run()
+    DataMeshCli().run()
