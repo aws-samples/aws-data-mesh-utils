@@ -12,6 +12,7 @@ sys.path.insert(0, current_dir)
 sys.path.insert(1, parent_dir)
 
 import data_mesh_util.lib.utils as utils
+from data_mesh_util.lib.constants import *
 from data_mesh_util.DataMeshAdmin import DataMeshAdmin
 from data_mesh_util.DataMeshProducer import DataMeshProducer
 from data_mesh_util.DataMeshConsumer import DataMeshConsumer
@@ -100,7 +101,10 @@ def _build_constructor_arg_dict(context, args):
     if args.region_name is not None:
         constructor_args["region_name"] = args.region_name
     else:
-        print("Using default region 'us-east-1'")
+        if 'AWS_REGION' not in os.getenv():
+            print("Using default region 'us-east-1'")
+        else:
+            constructor_args["region_name"] = os.getenv('AWS_REGION')
 
     if args.log_level is not None:
         constructor_args["log_level"] = args.log_level
@@ -108,12 +112,13 @@ def _build_constructor_arg_dict(context, args):
         constructor_args["log_level"] = 'INFO'
 
     # load credentials from args or from credentials file
-    if args.use_credentials is not None:
-        constructor_args['use_credentials'] = args.use_credentials
+    if 'use_credentials' in args and args.use_credentials is not None:
+        constructor_args['use_credentials'] = json.loads(args.use_credentials)
 
     if "credentials_file" in args and args.credentials_file is not None:
         region, clients, account_ids, credentials_dict = utils.load_client_info_from_file(
             args.credentials_file)
+        # use the region from the credentials file instead of env
         constructor_args['region_name'] = region
         constructor_args['use_credentials'] = credentials_dict.get(context)
 
@@ -132,6 +137,7 @@ def _extract_req_opt_params(args_spec: FullArgSpec) -> tuple:
     '''
     required_args = []
     opt_args = []
+    defaults_map = {}
 
     if len(args_spec.args) > 1:
         # count how many required parameters there are
@@ -213,6 +219,9 @@ def _get_req_opt_constructor_args(cls) -> tuple:
 class DataMeshCli:
     _caller_name = "DataMeshCli"
     _all_commands = None
+    _region = None
+    _creds = None
+    _account_ids = None
 
     def __init__(self, caller_name: str = None):
         if caller_name is not None:
@@ -225,7 +234,7 @@ class DataMeshCli:
     def _get_command(self, command) -> dict:
         '''
         Method to fetch a command, or display usage information
-        
+
         :param command:
         :return:
         '''
@@ -235,6 +244,19 @@ class DataMeshCli:
             _cli_usage(f"Command \"{command}\" Invalid", self._all_commands)
         else:
             return this_command
+
+    def _load_creds_data(self, from_filename: str) -> None:
+        self._region, x, self._account_ids, self._creds = utils.load_client_info_from_file(
+            from_filename)
+
+        # load required args for runtimes into sys.argv
+        def _load_argv(key, value) -> None:
+            sys.argv.append(f"--{key}")
+            sys.argv.append(value)
+
+        _load_argv("region_name", self._region)
+        if MESH in self._account_ids:
+            _load_argv("data_mesh_account_id", self._account_ids.get(MESH))
 
     def run(self):
         '''
@@ -253,6 +275,10 @@ class DataMeshCli:
 
         # lookup the class for the context
         cls = CONTEXT_MAPPING.get(context)
+
+        # special handler for cases where the credentials file is supplied, which allows us to extract many of the required arguments
+        if sys.argv[2] == '--credentials_file':
+            self._load_creds_data(sys.argv[3])
 
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
             _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)

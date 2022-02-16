@@ -1,0 +1,8 @@
+export AWS_REGION=<my default region>
+export CREDS_FILE=<my credentials file>
+export DATA_MESH_ACCOUNT=887210671223
+
+# install the data mesh governance objects into the mesh account using credentials specified in the credentials file
+./data-mesh-cli install-mesh-objects --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"AKIAJE3NECZRGDOAYQHA\",\"SecretAccessKey\":\"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\"}"
+
+./data-mesh-cli install-mesh-objects --credentials-file $CREDS_FILE
