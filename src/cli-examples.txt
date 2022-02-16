@@ -2,7 +2,11 @@ export AWS_REGION=<my default region>
 export CREDS_FILE=<my credentials file>
 export DATA_MESH_ACCOUNT=887210671223
 
-# install the data mesh governance objects into the mesh account using credentials specified in the credentials file
+# install the data mesh governance objects into the mesh account using credentials specified inline
 ./data-mesh-cli install-mesh-objects --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}"
 
+# install the data mesh governance objects driven by the credentials file which includes region and mesh account details
 ./data-mesh-cli install-mesh-objects --credentials-file $CREDS_FILE
+
+# bootstrap an account as a producer
+./data-mesh-cli enable-account --account_type producer --credentials_file $CREDS_FILE

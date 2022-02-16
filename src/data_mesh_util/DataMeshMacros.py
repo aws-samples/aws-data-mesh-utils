@@ -30,9 +30,11 @@ class DataMeshMacros:
             use_credentials=account_credentials
         )
 
-        if account_type == PRODUCER or account_type.lower() == self._BOTH.lower():
+        if account_type.lower() == PRODUCER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_producer_account()
             mesh_admin.enable_account_as_producer(account_id=account_credentials.get('AccountId'))
-        elif account_type == CONSUMER or account_type.lower() == self._BOTH.lower():
+        elif account_type.lower() == CONSUMER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_consumer_account()
             mesh_admin.enable_account_as_consumer(account_id=account_credentials.get('AccountId'))
+        else:
+            raise Exception(f"Unknown Account Type {account_type}")

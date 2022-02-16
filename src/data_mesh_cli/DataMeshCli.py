@@ -120,10 +120,8 @@ def _build_constructor_arg_dict(context, args):
             args.credentials_file)
         # use the region from the credentials file instead of env
         constructor_args['region_name'] = region
-        constructor_args['use_credentials'] = credentials_dict.get(context)
-
-    if 'use_credentials' not in constructor_args:
-        print("Loading credentials from boto runtime environment")
+        if context in credentials_dict:
+            constructor_args['use_credentials'] = credentials_dict.get(context)
 
     return constructor_args
 
@@ -150,8 +148,8 @@ def _extract_req_opt_params(args_spec: FullArgSpec) -> tuple:
 
         # add all default args working from back to front
         if len(args_spec.defaults) > 0:
-            for j in range(len(args_spec.defaults) + 1, 1, -1):
-                opt_args.append(args_spec.args[j])
+            for j in range(0, len(args_spec.defaults)):
+                opt_args.append(args_spec.args[len(args_spec.args) - j - 1])
 
         # build a defaults map
         defaults_map = _convert_argspec_to_default_mapping(args_spec)
@@ -216,6 +214,19 @@ def _get_req_opt_constructor_args(cls) -> tuple:
     return _extract_req_opt_params(constructor_args)
 
 
+# load required args for runtimes into sys.argv
+def _load_sysarg(key: str, value: str) -> None:
+    sys.argv.append(f"--{key}")
+    sys.argv.append(value)
+
+
+def _get_sysarg_value(key: str) -> str:
+    try:
+        return sys.argv[sys.argv.index(f"--{key}") + 1]
+    except (KeyError, ValueError):
+        return None
+
+
 class DataMeshCli:
     _caller_name = "DataMeshCli"
     _all_commands = None
@@ -249,14 +260,9 @@ class DataMeshCli:
         self._region, x, self._account_ids, self._creds = utils.load_client_info_from_file(
             from_filename)
 
-        # load required args for runtimes into sys.argv
-        def _load_argv(key, value) -> None:
-            sys.argv.append(f"--{key}")
-            sys.argv.append(value)
-
-        _load_argv("region_name", self._region)
+        _load_sysarg("region_name", self._region)
         if MESH in self._account_ids:
-            _load_argv("data_mesh_account_id", self._account_ids.get(MESH))
+            _load_sysarg("data_mesh_account_id", self._account_ids.get(MESH))
 
     def run(self):
         '''
@@ -273,12 +279,18 @@ class DataMeshCli:
         # load the command context
         context = command_data.get('Context')
 
-        # lookup the class for the context
-        cls = CONTEXT_MAPPING.get(context)
+        if context == 'Macro' and '--credentials_file' not in sys.argv:
+            raise Exception("This method requires the use of a credentials_file")
 
         # special handler for cases where the credentials file is supplied, which allows us to extract many of the required arguments
-        if sys.argv[2] == '--credentials_file':
-            self._load_creds_data(sys.argv[3])
+        if '--credentials_file' in sys.argv and '--data_mesh_account_id' not in sys.argv:
+            self._load_creds_data(_get_sysarg_value("credentials_file"))
+
+        if '--credentials_file' not in sys.argv and '--use_credentials' not in sys.argv:
+            print("Will load credentials from boto environment")
+
+        # lookup the class for the context
+        cls = CONTEXT_MAPPING.get(context)
 
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
             _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)
@@ -303,12 +315,27 @@ class DataMeshCli:
 
         # reset the parser so we can extract just function args
         parser = argparse.ArgumentParser(prog=f"{self._caller_name} {command_name}")
-        _add_args(required_params, True)
-        _add_args(optional_params, False)
-        args, _ = parser.parse_known_args(args=sys.argv[2:])
 
-        # generate a dict from the required and optional args so we can use it for a keywords invocation
-        method_args = vars(args)
+        if command_name == 'enable-account':
+            # macro functions require different handling of credentials, and must have been invoked with a credentials file
+            if _get_sysarg_value('account_type').capitalize() == PRODUCER:
+                cred_name = PRODUCER_ADMIN
+            elif _get_sysarg_value('account_type').capitalize() == CONSUMER:
+                cred_name = CONSUMER_ADMIN
+            
+            method_args = {
+                'account_type': _get_sysarg_value('account_type'),
+                'mesh_credentials': self._creds.get(MESH),
+                'account_credentials': self._creds.get(cred_name),
+                'crawler_role_arn': _get_sysarg_value('crawler_role_arn')
+            }
+        else:
+            _add_args(required_params, True)
+            _add_args(optional_params, False)
+            args, _ = parser.parse_known_args(args=sys.argv[2:])
+
+            # generate a dict from the required and optional args so we can use it for a keywords invocation
+            method_args = vars(args)
 
         # call the class method using keyword args
         try:

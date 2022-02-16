@@ -30,5 +30,9 @@
   "install-mesh-objects": {
     "Context": "Mesh",
     "Method": "initialize_mesh_account"
+  },
+  "enable-account": {
+    "Context": "Macro",
+    "Method": "bootstrap_account"
   }
 }
