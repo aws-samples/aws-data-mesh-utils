@@ -220,13 +220,6 @@ def _load_sysarg(key: str, value: str) -> None:
     sys.argv.append(value)
 
 
-def _get_sysarg_value(key: str) -> str:
-    try:
-        return sys.argv[sys.argv.index(f"--{key}") + 1]
-    except (KeyError, ValueError):
-        return None
-
-
 class DataMeshCli:
     _caller_name = "DataMeshCli"
     _all_commands = None
@@ -257,6 +250,12 @@ class DataMeshCli:
             return this_command
 
     def _load_creds_data(self, from_filename: str) -> None:
+        '''
+        Method to pack sys.argv with values from a credentials file, so we can 'spoof' that they have been provided by
+        the caller
+        :param from_filename:
+        :return:
+        '''
         self._region, x, self._account_ids, self._creds = utils.load_client_info_from_file(
             from_filename)
 
@@ -272,6 +271,15 @@ class DataMeshCli:
         if len(sys.argv) == 1:
             _cli_usage("No Valid Arguments Supplied")
 
+        # create an argument parser with the caller name listed so we get a nice usage string
+        parser = argparse.ArgumentParser(prog=self._caller_name)
+
+        # add command line arguments to grab credentials information at first
+        parser.add_argument("--data_mesh_account_id", required=False)
+        parser.add_argument("--credentials_file", required=False)
+        parser.add_argument("--use_credentials", required=False)
+        cred_args, _ = parser.parse_known_args(args=sys.argv[2:])
+
         # resolve the supplied command
         command_name = sys.argv[1]
         command_data = self._get_command(command_name)
@@ -279,14 +287,14 @@ class DataMeshCli:
         # load the command context
         context = command_data.get('Context')
 
-        if context == 'Macro' and '--credentials_file' not in sys.argv:
+        if context == 'Macro' and cred_args.credentials_file is None:
             raise Exception("This method requires the use of a credentials_file")
 
         # special handler for cases where the credentials file is supplied, which allows us to extract many of the required arguments
-        if '--credentials_file' in sys.argv and '--data_mesh_account_id' not in sys.argv:
-            self._load_creds_data(_get_sysarg_value("credentials_file"))
+        if cred_args.credentials_file is not None and cred_args.data_mesh_account_id is None:
+            self._load_creds_data(cred_args.credentials_file)
 
-        if '--credentials_file' not in sys.argv and '--use_credentials' not in sys.argv:
+        if cred_args.credentials_file is None and cred_args.use_credentials is None:
             print("Will load credentials from boto environment")
 
         # lookup the class for the context
@@ -295,10 +303,8 @@ class DataMeshCli:
         if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
             _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)
 
-        # create an argument parser with the caller name listed so we get a nice usage string
+        # reset parser and add constructor args for callable classes
         parser = argparse.ArgumentParser(prog=self._caller_name)
-
-        # add constructor args for callable classes
         _add_constructor_args(cls, parser)
         constructor_params, _ = parser.parse_known_args(args=sys.argv[2:])
         constructor_args = _build_constructor_arg_dict(context, constructor_params)
@@ -318,16 +324,20 @@ class DataMeshCli:
 
         if command_name == 'enable-account':
             # macro functions require different handling of credentials, and must have been invoked with a credentials file
-            if _get_sysarg_value('account_type').capitalize() == PRODUCER:
+            parser.add_argument('--account_type', required=True)
+            parser.add_argument('--crawler_role_arn', required=False)
+            macro_args, _ = parser.parse_known_args(args=sys.argv[2:])
+
+            if macro_args.account_type.capitalize() == PRODUCER:
                 cred_name = PRODUCER_ADMIN
-            elif _get_sysarg_value('account_type').capitalize() == CONSUMER:
+            elif macro_args.account_type.capitalize() == CONSUMER:
                 cred_name = CONSUMER_ADMIN
-            
+
             method_args = {
-                'account_type': _get_sysarg_value('account_type'),
+                'account_type': macro_args.account_type,
                 'mesh_credentials': self._creds.get(MESH),
                 'account_credentials': self._creds.get(cred_name),
-                'crawler_role_arn': _get_sysarg_value('crawler_role_arn')
+                'crawler_role_arn': macro_args.crawler_role_arn
             }
         else:
             _add_args(required_params, True)
