@@ -401,6 +401,11 @@ class DataMeshProducer:
         # load the subscription
         subscription = self._subscription_tracker.get_subscription(subscription_id=request_id)
 
+        if subscription is None:
+            raise Exception(f"Unable to resolve Subscription {request_id}")
+        elif subscription.get(STATUS) != STATUS_PENDING:
+            raise Exception(f"Unable to approve access to Subscriptions in {subscription.get(STATUS)} status")
+
         # approver can override the requested grants
         if grant_permissions is None:
             set_permissions = subscription.get(REQUESTED_GRANTS)
@@ -422,6 +427,9 @@ class DataMeshProducer:
             table_list = [tables]
 
         for t in table_list:
+            # confirm that the requested object exists
+            self._mesh_automator.describe_table(database_name=subscription.get(DATABASE_NAME), table_name=t)
+
             # resolve the original database name
             original_db = subscription.get(DATABASE_NAME).replace(f"-{self._data_producer_account_id}", "")
 
