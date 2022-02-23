@@ -98,6 +98,10 @@ class DataMeshConsumer:
         else:
             table_list = [tables]
 
+        # validate that the object is visible to the consumer
+        for t in table_list:
+            self._consumer_automator.describe_table(database_name=database_name, table_name=t)
+
         return self._subscription_tracker.create_subscription_request(
             owner_account_id=owner_account_id,
             database_name=database_name,

@@ -534,7 +534,7 @@ class ApiAutomator:
         if current_resource_policy is None:
             new_resource_policy = {
                 "Version": "2012-10-17",
-                "Statement": [policy]
+                "Statement": policy
             }
             glue_client.put_resource_policy(
                 PolicyInJson=json.dumps(new_resource_policy),
@@ -703,14 +703,17 @@ class ApiAutomator:
             return f"arn:aws:iam::{self._target_account}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"
 
     def describe_table(self, database_name: str, table_name: str):
-        glue_client = self._get_client('glue')
+        try:
+            glue_client = self._get_client('glue')
 
-        table = glue_client.get_table(
-            DatabaseName=database_name,
-            Name=table_name
-        )
+            table = glue_client.get_table(
+                DatabaseName=database_name,
+                Name=table_name
+            )
 
-        return table.get('Table')
+            return table.get('Table')
+        except glue_client.exceptions.EntityNotFoundException:
+            raise Exception(f"Table {database_name}.{table_name} Not Found")
 
     def lf_batch_revoke_permissions(self,
                                     data_mesh_account_id: str,

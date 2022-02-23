@@ -46,5 +46,6 @@ if __name__ == "__main__":
     parser.add_argument('--request_permissions', nargs="+", dest='request_permissions', required=True)
 
     args = parser.parse_args()
-    print(Step2().create_subscription_request(database_name=args.database_name, tables=args.tables,
-                                              request_permissions=args.request_permissions))
+    request_id = Step2().create_subscription_request(database_name=args.database_name, tables=args.tables,
+                                                     request_permissions=args.request_permissions)
+    print(f"Created request {request_id}")
