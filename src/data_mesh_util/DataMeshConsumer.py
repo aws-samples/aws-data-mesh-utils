@@ -130,6 +130,10 @@ class DataMeshConsumer:
             sender_account=self._data_mesh_account_id
         )
 
+        self._subscription_tracker.mark_subscription_as_imported(
+            subscription_id=subscription_id
+        )
+
     def get_subscription(self, request_id: str) -> dict:
         return self._subscription_tracker.get_subscription(subscription_id=request_id)
 

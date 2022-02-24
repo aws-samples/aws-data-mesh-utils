@@ -117,7 +117,10 @@ class SubscriberTracker:
             # split the update expression and extract the SET portion, which we will rewrite
             tokens = re.split('(ADD|SET)', args.get("UpdateExpression"), flags=re.IGNORECASE)
             set_clause = tokens[tokens.index('SET') + 1]
-            add_clause = tokens[tokens.index('ADD') + 1]
+
+            add_clause = None
+            if 'ADD' in tokens:
+                add_clause = tokens[tokens.index('ADD') + 1]
 
             # add the update expression, names, and values
             set_clause = "%s, #upd_dt = :upd_dt, #upd_by = :upd_by" % set_clause
@@ -126,7 +129,10 @@ class SubscriberTracker:
             args["ExpressionAttributeValues"][":upd_dt"] = _format_time_now()
             args["ExpressionAttributeValues"][":upd_by"] = self._who_am_i()
 
-            args["UpdateExpression"] = "SET %s ADD %s" % (set_clause, add_clause)
+            if add_clause is not None:
+                args["UpdateExpression"] = f"SET {set_clause} ADD {add_clause}"
+            else:
+                args["UpdateExpression"] = f"SET {set_clause}"
 
             return args
 
@@ -522,6 +528,30 @@ class SubscriberTracker:
         }
 
         return self._handle_update(args)
+
+    def mark_subscription_as_imported(self, subscription_id: str):
+        current_sub = self.get_subscription(subscription_id=subscription_id)
+
+        if current_sub.get(STATUS) != STATUS_ACTIVE:
+            raise Exception("Subscription must be Active to import")
+        else:
+            update_expression = "SET #imported = :imported"
+            expression_attribute_names = {
+                "#imported": "ImportedToConsumer"
+            }
+            expression_attribute_values = {
+                ":imported": True
+            }
+            args = {
+                "Key": {
+                    SUBSCRIPTION_ID: subscription_id
+                },
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeNames": expression_attribute_names,
+                "ExpressionAttributeValues": expression_attribute_values
+            }
+
+            return self._handle_update(args)
 
     def update_status(self, subscription_id: str, status: str, table_arns: list = None, permitted_grants: list = None,
                       grantable_grants: list = None, notes: str = None, ram_shares: dict = None):
