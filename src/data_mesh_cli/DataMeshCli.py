@@ -30,15 +30,16 @@ CONTEXT_MAPPING = {
 _printer = pprint.PrettyPrinter(indent=4)
 
 
-def _cli_usage(message: str, all_commands: dict = None) -> None:
+def _cli_usage(message: str = None, all_commands: dict = None) -> None:
     '''
     Method to print usage information for the cli to standard out
     :param message:
     :param all_commands:
     :return:
     '''
-    print(message)
-    print()
+    if message is not None:
+        print(message)
+        print()
     print("aws-data-mesh <command> <args>")
     print(
         "   <command> - The command to perform, such as 'create-data-product', or 'request-access'. The command automatically infers the credential context to use.")
@@ -300,7 +301,10 @@ class DataMeshCli:
 
         # resolve the supplied command
         command_name = sys.argv[1]
-        command_data = self._get_command(command_name)
+        if sys.argv[1] == 'help':
+            _cli_usage(all_commands=self._all_commands)
+        else:
+            command_data = self._get_command(command_name)
 
         # load the command context
         context = command_data.get('Context')
