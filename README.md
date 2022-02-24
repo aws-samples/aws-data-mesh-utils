@@ -31,6 +31,10 @@ The following general functionality available to any Data Mesh role:
 * __List Subscriptions__ - Lists all Subscriptions and their associated status for any number of filters
 * __Get Subscription__ - Retrieves a single Subscription
 
+### Using Data Mesh Utils
+
+This module is provided as a python package, but also includes a command line utility (cli) for convenience. Please click [here](doc/cli.md) for cli usage instructions.
+
 ### Overall System Architecture
 
 The following diagram depicts the overall system architecture associated with a Data Mesh that is in use by a separate __Producer__ and __Consumer__ Accounts:
