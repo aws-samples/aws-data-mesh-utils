@@ -401,16 +401,20 @@ class DataMeshProducer:
         # load the subscription
         subscription = self._subscription_tracker.get_subscription(subscription_id=request_id)
 
+        # validate types provided for grants and grantable
+        grant_perms = utils.ensure_list(grant_permissions)
+        grantable_perms = utils.ensure_list(grantable_permissions)
+
         if subscription is None:
             raise Exception(f"Unable to resolve Subscription {request_id}")
-        elif subscription.get(STATUS) != STATUS_PENDING:
-            raise Exception(f"Unable to approve access to Subscriptions in {subscription.get(STATUS)} status")
+        elif subscription.get(STATUS) == STATUS_ACTIVE:
+            raise Exception(f"Subscription is already Active")
 
         # approver can override the requested grants
-        if grant_permissions is None:
+        if grant_perms is None:
             set_permissions = subscription.get(REQUESTED_GRANTS)
         else:
-            set_permissions = grant_permissions
+            set_permissions = grant_perms
 
         # grant the approved permissions in lake formation
         data_mesh_lf_client = utils.generate_client(service='lakeformation', region=self._current_region,
@@ -469,7 +473,7 @@ class DataMeshProducer:
                     database_name=subscription.get(DATABASE_NAME),
                     table_name=table_name,
                     permissions=set_permissions,
-                    grantable_permissions=grantable_permissions
+                    grantable_permissions=grantable_perms
                 )
 
                 rs = utils.load_ram_shares(lf_client=data_mesh_lf_client,
@@ -497,7 +501,7 @@ class DataMeshProducer:
         # update the subscription to reflect the changes
         self._subscription_tracker.update_status(
             subscription_id=request_id, status=STATUS_ACTIVE,
-            permitted_grants=grant_permissions, grantable_grants=grantable_permissions, notes=decision_notes,
+            permitted_grants=grant_perms, grantable_grants=grantable_perms, notes=decision_notes,
             ram_shares=ram_shares, table_arns=table_arns
         )
 

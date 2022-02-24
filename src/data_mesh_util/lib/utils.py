@@ -171,6 +171,17 @@ def _validate_credentials(credentials) -> dict:
 
     return out
 
+
+def ensure_list(input_list: list) -> list:
+    if isinstance(input_list, list):
+        return input_list
+    elif isinstance(input_list, str):
+        if "," in input_list:
+            return input_list.split(',')
+        else:
+            return [input_list]
+
+
 def load_client_info_from_file(from_path: str = None):
     if from_path is None:
         use_path = os.getenv('CredentialsFile')
@@ -197,6 +208,7 @@ def load_client_info_from_file(from_path: str = None):
         _credentials_dict = _creds
 
     return _region, _clients, _account_ids, _credentials_dict
+
 
 def load_ram_shares(lf_client, data_mesh_account_id: str, database_name: str, table_name: str,
                     target_principal: str) -> dict:

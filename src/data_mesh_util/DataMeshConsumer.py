@@ -93,23 +93,8 @@ class DataMeshConsumer:
         :param request_permissions:
         :return:
         '''
-        table_list = None
-        if isinstance(tables, list):
-            table_list = tables
-        elif isinstance(tables, str):
-            if "," in tables:
-                table_list = tables.split(',')
-            else:
-                table_list = [tables]
-
-        perm_list = None
-        if isinstance(request_permissions, list):
-            perm_list = request_permissions
-        elif isinstance(request_permissions, str):
-            if "," in request_permissions:
-                perm_list = request_permissions.split(',')
-            else:
-                perm_list = [request_permissions]
+        table_list = utils.ensure_list(tables)
+        perm_list = utils.ensure_list(request_permissions)
 
         # validate that the object is visible to the consumer
         for t in table_list:

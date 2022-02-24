@@ -24,8 +24,12 @@ export CONSUMER_ACCOUNT=206160724517
 ./data-mesh-cli request-access --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --owner-account-id $PRODUCER_ACCOUNT --database_name <database> --tables <table1, table2, table3> --request-permissions <permissions desired including SELECT, INSERT, UPDATE, DELETE, DROP, ALTER>
 ./data-mesh-cli request-access --credentials_file $CREDS_FILE --owner-account-id $PRODUCER_ACCOUNT --database_name <database> --tables <table1, table2, table3> --request-permissions <permissions desired including SELECT, INSERT, UPDATE, DELETE, DROP, ALTER>
 
-./data-mesh-cli approve-subscription
-./data-mesh-cli deny-subscription
+./data-mesh-cli deny-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --decision_notes "Notes attached to the denial"
+./data-mesh-cli deny-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --decision_notes "No Way Dude!"
+
+./data-mesh-cli approve-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --grant-permissions <permissions allowed to the consumer> --grantable-permissions <permissions the consumer can pass on. remove parameter for no grantable permissions> --decision_notes "Notes attached to the approval"
+./data-mesh-cli approve-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --grant-permissions SELECT --decision_notes "Changed my mind"
+
 ./data-mesh-cli modify-subscription
 
 ./data-mesh-cli import-subscription

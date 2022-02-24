@@ -364,7 +364,11 @@ class DataMeshCli:
             response = method(**method_args)
 
             if response is not None:
-                _printer.pprint(response)
+                message = response
+                if isinstance(response, bool):
+                    message = "Success"
+
+                _printer.pprint(message)
 
             sys.exit(0)
         except Exception as e:

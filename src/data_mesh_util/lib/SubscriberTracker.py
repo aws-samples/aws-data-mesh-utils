@@ -523,7 +523,7 @@ class SubscriberTracker:
 
         return self._handle_update(args)
 
-    def update_status(self, subscription_id: str, status: str, table_arns: list, permitted_grants: list = None,
+    def update_status(self, subscription_id: str, status: str, table_arns: list = None, permitted_grants: list = None,
                       grantable_grants: list = None, notes: str = None, ram_shares: dict = None):
         '''
         Updates the status of a subscription. Valid transitions are:
