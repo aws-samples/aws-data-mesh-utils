@@ -173,6 +173,9 @@ def _validate_credentials(credentials) -> dict:
 
 
 def ensure_list(input_list: list) -> list:
+    if input_list is None:
+        return []
+
     if isinstance(input_list, list):
         return input_list
     elif isinstance(input_list, str):
