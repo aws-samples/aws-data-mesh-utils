@@ -84,7 +84,7 @@ When string escaped for use on the command line, this argument will look like:
 
 ### Credentials File
 
-Encoding JSON in string values is a terrible way to spend time, so instead you can use a credentials file. This file takes exactly the same form as documented in the primary [README](README.md), and an example can be found in [examples/example-creds.json](examples/example-creds.json).
+Encoding JSON in string values is a terrible way to spend time, so instead you can use a credentials file. This file takes exactly the same form as documented in the primary [README](./README.md), and an example can be found in [./examples/example-creds.json](examples/example-creds.json).
 
 To use a credentials file, you specify the path with argument value `--credentials-file <path-to-file>`.
 
