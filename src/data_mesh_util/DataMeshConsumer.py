@@ -96,8 +96,20 @@ class DataMeshConsumer:
         table_list = None
         if isinstance(tables, list):
             table_list = tables
-        else:
-            table_list = [tables]
+        elif isinstance(tables, str):
+            if "," in tables:
+                table_list = tables.split(',')
+            else:
+                table_list = [tables]
+
+        perm_list = None
+        if isinstance(request_permissions, list):
+            perm_list = request_permissions
+        elif isinstance(request_permissions, str):
+            if "," in request_permissions:
+                perm_list = request_permissions.split(',')
+            else:
+                perm_list = [request_permissions]
 
         # validate that the object is visible to the consumer
         for t in table_list:
@@ -108,7 +120,7 @@ class DataMeshConsumer:
             database_name=database_name,
             tables=table_list,
             principal=self._current_account.get('Account'),
-            request_grants=request_permissions,
+            request_grants=perm_list,
             suppress_object_validation=True
         )
 
