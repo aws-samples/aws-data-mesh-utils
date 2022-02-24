@@ -139,15 +139,22 @@ def _extract_req_opt_params(args_spec: FullArgSpec) -> tuple:
 
     if len(args_spec.args) > 1:
         # count how many required parameters there are
-        required_count = len(args_spec.args) - len(args_spec.defaults)
+        required_count = 0
+        if args_spec.args is not None and args_spec.defaults is not None:
+            required_count = len(args_spec.args) - len(args_spec.defaults)
+        else:
+            if args_spec.args is None:
+                required_count = 0
+            else:
+                required_count = len(args_spec.args)
 
-        if len(args_spec.args) > 1:
+        if args_spec.args is not None and len(args_spec.args) > 1:
             # add all required arguments that don't have defaults
             for i in range(1, required_count):
                 required_args.append(args_spec.args[i])
 
         # add all default args working from back to front
-        if len(args_spec.defaults) > 0:
+        if args_spec.defaults is not None and len(args_spec.defaults) > 0:
             for j in range(0, len(args_spec.defaults)):
                 opt_args.append(args_spec.args[len(args_spec.args) - j - 1])
 
@@ -188,8 +195,10 @@ def _convert_argspec_to_default_mapping(arg_spec: FullArgSpec) -> dict:
     # arg specs are end-first indexed with each other, so operate on reversed parameters and defaults
     r_args = arg_spec.args.copy()
     r_args.reverse()
-    r_defs = list(arg_spec.defaults)
-    r_defs.reverse()
+    r_defs = []
+    if arg_spec.defaults is not None:
+        r_defs = list(arg_spec.defaults)
+        r_defs.reverse()
     arg_list = []
     for i, arg in enumerate(r_args):
         if arg != 'self':
