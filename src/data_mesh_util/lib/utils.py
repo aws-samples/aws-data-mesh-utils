@@ -10,6 +10,7 @@ import pystache
 import botocore
 import boto3
 import datetime
+import json
 
 
 def make_iam_session_name(current_account):
@@ -171,6 +172,47 @@ def _validate_credentials(credentials) -> dict:
     return out
 
 
+def ensure_list(input_list: list) -> list:
+    if input_list is None:
+        return []
+
+    if isinstance(input_list, list):
+        return input_list
+    elif isinstance(input_list, str):
+        if "," in input_list:
+            return input_list.split(',')
+        else:
+            return [input_list]
+
+
+def load_client_info_from_file(from_path: str = None):
+    if from_path is None:
+        use_path = os.getenv('CredentialsFile')
+    else:
+        use_path = from_path
+
+    if use_path is None:
+        raise Exception(
+            "Unable to load Client Connection information without a file reference. Provide a direct path or set environment variable CredentialsFile")
+
+    _creds = None
+    with open(use_path, 'r') as w:
+        _creds = json.load(w)
+        w.close()
+
+    _clients = {}
+    _account_ids = {}
+    _credentials_dict = {}
+    _region = _creds.get('AWS_REGION')
+
+    for token in [MESH, PRODUCER, CONSUMER, PRODUCER_ADMIN, CONSUMER_ADMIN]:
+        _clients[token] = generate_client('sts', region=_region, credentials=_creds.get(token))
+        _account_ids[token] = _creds.get(token).get('AccountId')
+        _credentials_dict = _creds
+
+    return _region, _clients, _account_ids, _credentials_dict
+
+
 def load_ram_shares(lf_client, data_mesh_account_id: str, database_name: str, table_name: str,
                     target_principal: str) -> dict:
     ram_shares = {}
@@ -240,7 +282,7 @@ def create_session(credentials=None, region=None):
 
         return boto3.session.Session(**args)
     else:
-        return botocore.session.get_session()
+        return boto3.session.Session()
 
 
 def generate_client(service: str, region: str, credentials):

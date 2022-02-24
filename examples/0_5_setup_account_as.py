@@ -8,7 +8,7 @@ import argparse
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 sys.path.insert(0, parent_dir)
 
-import example_utils
+import data_mesh_util.lib.utils as utils
 from data_mesh_util.lib.constants import *
 import data_mesh_util.lib.utils as utils
 from data_mesh_util import DataMeshAdmin as dmu
@@ -24,7 +24,7 @@ class Step0_5():
     have DataLakeAdmin permissions.
     '''
     _logger = logging.getLogger("DataMeshAdmin")
-    _region, _clients, _account_ids, _creds = example_utils.load_client_info_from_file()
+    _region, _clients, _account_ids, _creds = utils.load_client_info_from_file()
 
     def setUp(self) -> None:
         warnings.filterwarnings("ignore", category=ResourceWarning)

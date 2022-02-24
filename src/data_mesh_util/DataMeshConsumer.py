@@ -30,7 +30,8 @@ class DataMeshConsumer:
     _consumer_automator = None
     _ro_session = None
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str = "INFO", use_credentials=None):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
+                 use_credentials=None):
         if region_name is None:
             raise Exception("Cannot initialize a Data Mesh Consumer without an AWS Region")
         else:
@@ -92,11 +93,8 @@ class DataMeshConsumer:
         :param request_permissions:
         :return:
         '''
-        table_list = None
-        if isinstance(tables, list):
-            table_list = tables
-        else:
-            table_list = [tables]
+        table_list = utils.ensure_list(tables)
+        perm_list = utils.ensure_list(request_permissions)
 
         # validate that the object is visible to the consumer
         for t in table_list:
@@ -107,7 +105,7 @@ class DataMeshConsumer:
             database_name=database_name,
             tables=table_list,
             principal=self._current_account.get('Account'),
-            request_grants=request_permissions,
+            request_grants=perm_list,
             suppress_object_validation=True
         )
 
@@ -130,6 +128,10 @@ class DataMeshConsumer:
 
         self._consumer_automator.accept_pending_lf_resource_shares(
             sender_account=self._data_mesh_account_id
+        )
+
+        self._subscription_tracker.mark_subscription_as_imported(
+            subscription_id=subscription_id
         )
 
     def get_subscription(self, request_id: str) -> dict:

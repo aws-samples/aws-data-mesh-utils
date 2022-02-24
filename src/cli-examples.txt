@@ -1,0 +1,43 @@
+export AWS_REGION=<my default region>
+export CREDS_FILE=<my credentials file>
+export DATA_MESH_ACCOUNT=<my account id>
+
+# install the data mesh governance objects into the mesh account using credentials specified inline
+./data-mesh-cli install-mesh-objects --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}"
+
+# install the data mesh governance objects driven by the credentials file which includes region and mesh account details
+./data-mesh-cli install-mesh-objects --credentials_file $CREDS_FILE
+
+# bootstrap an account as a producer
+./data-mesh-cli enable-account --account_type producer --credentials_file $CREDS_FILE
+
+# bootstrap an account as a consumer
+./data-mesh-cli enable-account --account_type consumer --credentials_file $CREDS_FILE
+
+# create a new data product for a table
+./data-mesh-cli create-data-product --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --source_database_name <database> --table_name_regex <table name or pattern>
+./data-mesh-cli create-data-product --credentials_file $CREDS_FILE  --source_database_name tpcds --table_name_regex web_sales
+
+# as a consumer, ask for access to that product
+./data-mesh-cli request-access --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --owner-account-id $PRODUCER_ACCOUNT --database_name <database> --tables <table1, table2, table3> --request-permissions <permissions desired including SELECT, INSERT, UPDATE, DELETE, DROP, ALTER>
+./data-mesh-cli request-access --credentials_file $CREDS_FILE --owner-account-id $PRODUCER_ACCOUNT --database_name <database> --tables <table1, table2, table3> --request-permissions <permissions desired including SELECT, INSERT, UPDATE, DELETE, DROP, ALTER>
+
+# deny a subscription
+./data-mesh-cli deny-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --decision_notes "Notes attached to the denial"
+./data-mesh-cli deny-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --decision_notes "No Way Dude!"
+
+# change your mind and approve it now
+./data-mesh-cli approve-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --grant-permissions <permissions allowed to the consumer> --grantable-permissions <permissions the consumer can pass on. remove parameter for no grantable permissions> --decision_notes "Notes attached to the approval"
+./data-mesh-cli approve-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --grant-permissions SELECT --decision_notes "Changed my mind"
+
+# modify the subscription to allow an additional grant
+./data-mesh-cli modify-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --subscription-id <subscription> --grant-permissions <permissions allowed to the consumer> --grantable-permissions <permissions the consumer can pass on. remove parameter for no grantable permissions> --notes "Notes attached to the modification"
+ ./data-mesh-cli modify-subscription --credentials_file $CREDS_FILE --subscription-id 4GaXSebUtSvzXQXv7mZt3M --grant-permissions SELECT,INSERT --notes "Ok you can insert too"
+
+# list the subscriptions that I have as a consumer
+./data-mesh-cli list-subscriptions --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}"
+./data-mesh-cli list-subscriptions --credentials_file $CREDS_FILE
+
+# import the subscription into the consumer account
+./data-mesh-cli import-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --subscription-id 4GaXSebUtSvzXQXv7mZt3M
+./data-mesh-cli import-subscription --credentials_file $CREDS_FILE --subscription-id 4GaXSebUtSvzXQXv7mZt3M

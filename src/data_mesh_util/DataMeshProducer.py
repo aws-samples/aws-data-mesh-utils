@@ -33,7 +33,8 @@ class DataMeshProducer:
     _producer_automator = None
     _mesh_automator = None
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str = "INFO", use_credentials=None):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
+                 use_credentials=None):
         self._data_mesh_account_id = data_mesh_account_id
 
         if region_name is None:
@@ -401,16 +402,20 @@ class DataMeshProducer:
         # load the subscription
         subscription = self._subscription_tracker.get_subscription(subscription_id=request_id)
 
+        # validate types provided for grants and grantable
+        grant_perms = utils.ensure_list(grant_permissions)
+        grantable_perms = utils.ensure_list(grantable_permissions)
+
         if subscription is None:
             raise Exception(f"Unable to resolve Subscription {request_id}")
-        elif subscription.get(STATUS) != STATUS_PENDING:
-            raise Exception(f"Unable to approve access to Subscriptions in {subscription.get(STATUS)} status")
+        elif subscription.get(STATUS) == STATUS_ACTIVE:
+            raise Exception(f"Subscription is already Active")
 
         # approver can override the requested grants
-        if grant_permissions is None:
+        if grant_perms is None:
             set_permissions = subscription.get(REQUESTED_GRANTS)
         else:
-            set_permissions = grant_permissions
+            set_permissions = grant_perms
 
         # grant the approved permissions in lake formation
         data_mesh_lf_client = utils.generate_client(service='lakeformation', region=self._current_region,
@@ -469,7 +474,7 @@ class DataMeshProducer:
                     database_name=subscription.get(DATABASE_NAME),
                     table_name=table_name,
                     permissions=set_permissions,
-                    grantable_permissions=grantable_permissions
+                    grantable_permissions=grantable_perms
                 )
 
                 rs = utils.load_ram_shares(lf_client=data_mesh_lf_client,
@@ -497,7 +502,7 @@ class DataMeshProducer:
         # update the subscription to reflect the changes
         self._subscription_tracker.update_status(
             subscription_id=request_id, status=STATUS_ACTIVE,
-            permitted_grants=grant_permissions, grantable_grants=grantable_permissions, notes=decision_notes,
+            permitted_grants=grant_perms, grantable_grants=grantable_perms, notes=decision_notes,
             ram_shares=ram_shares, table_arns=table_arns
         )
 
@@ -534,16 +539,20 @@ class DataMeshProducer:
         '''
         subscription = self._subscription_tracker.get_subscription(subscription_id)
 
+        # validate types provided for grants and grantable
+        grant_perms = utils.ensure_list(grant_permissions)
+        grantable_perms = utils.ensure_list(grantable_permissions)
+
         current_permissions = subscription.get(PERMITTED_GRANTS)
         current_grantable_permissions = subscription.get(GRANTABLE_GRANTS)
         if current_grantable_permissions is None:
             current_grantable_permissions = []
 
         # calculate the permissions to be added
-        perms_to_add = list(set(grant_permissions) - set(current_permissions))
+        perms_to_add = list(set(grant_perms) - set(current_permissions))
         grantable_perms_to_add = []
-        if len(grantable_permissions or '') > 0:
-            grantable_perms_to_add = list(set(grantable_permissions) - set(current_grantable_permissions))
+        if len(grantable_perms or '') > 0:
+            grantable_perms_to_add = list(set(grantable_perms) - set(current_grantable_permissions))
 
         # cant add grantable permissions without granting them first
         if len(perms_to_add or '') == 0 and len(grantable_perms_to_add or '') > 0:
@@ -565,12 +574,9 @@ class DataMeshProducer:
         current_grantable_permissions.extend(grantable_perms_to_add)
 
         # calculate the permissions to be removed
-        perms_to_remove = list(set(current_permissions) - set(grant_permissions))
+        perms_to_remove = list(set(current_permissions) - set(grant_perms))
 
-        if grantable_permissions is None:
-            grantable_permissions = []
-
-        grantable_perms_to_remove = list(set(current_grantable_permissions) - set(grantable_permissions))
+        grantable_perms_to_remove = list(set(current_grantable_permissions) - set(grantable_perms))
 
         # revoke permissions at the lakeformation level
         if len(perms_to_remove or '') > 0:
@@ -585,8 +591,8 @@ class DataMeshProducer:
 
         self._subscription_tracker.update_grants(
             subscription_id=subscription_id,
-            permitted_grants=grant_permissions,
-            grantable_grants=grantable_permissions,
+            permitted_grants=grant_perms,
+            grantable_grants=grantable_perms,
             notes=notes
         )
 

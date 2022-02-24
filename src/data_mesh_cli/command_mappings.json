@@ -1,0 +1,38 @@
+{
+  "create-data-product": {
+    "Context": "Producer",
+    "Method": "create_data_products"
+  },
+  "approve-subscription": {
+    "Context": "Producer",
+    "Method": "approve_access_request"
+  },
+  "deny-subscription": {
+    "Context": "Producer",
+    "Method": "deny_access_request"
+  },
+  "modify-subscription": {
+    "Context": "Producer",
+    "Method": "update_subscription_permissions"
+  },
+  "request-access": {
+    "Context": "Consumer",
+    "Method": "request_access_to_product"
+  },
+  "import-subscription": {
+    "Context": "Consumer",
+    "Method": "finalize_subscription"
+  },
+  "list-subscriptions": {
+    "Context": "Consumer",
+    "Method": "list_product_access"
+  },
+  "install-mesh-objects": {
+    "Context": "Mesh",
+    "Method": "initialize_mesh_account"
+  },
+  "enable-account": {
+    "Context": "Macro",
+    "Method": "bootstrap_account"
+  }
+}

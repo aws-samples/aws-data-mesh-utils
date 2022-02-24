@@ -8,7 +8,7 @@ class DataMeshMacros:
     _log_level = None
     _BOTH = 'Both'
 
-    def __init__(self, data_mesh_account_id: str, region_name: str, log_level: str):
+    def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO"):
         self._data_mesh_account_id = data_mesh_account_id
         self._region = region_name
         self._log_level = log_level
@@ -30,9 +30,11 @@ class DataMeshMacros:
             use_credentials=account_credentials
         )
 
-        if account_type == PRODUCER or account_type.lower() == self._BOTH.lower():
+        if account_type.lower() == PRODUCER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_producer_account()
             mesh_admin.enable_account_as_producer(account_id=account_credentials.get('AccountId'))
-        elif account_type == CONSUMER or account_type.lower() == self._BOTH.lower():
+        elif account_type.lower() == CONSUMER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_consumer_account()
             mesh_admin.enable_account_as_consumer(account_id=account_credentials.get('AccountId'))
+        else:
+            raise Exception(f"Unknown Account Type {account_type}")
