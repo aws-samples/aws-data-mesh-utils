@@ -1,9 +1,8 @@
-DEFAULT_TAGS = [
-    {
-        'Key': 'Solution',
-        'Value': 'DataMeshUtils'
-    },
-]
+DEFAULT_TAGS = {
+                   'Key': 'Solution',
+                   'Value': 'DataMeshUtils'
+               },
+
 DOMAIN_TAG_KEY = 'Domain'
 DATA_PRODUCT_TAG_KEY = 'DataProduct'
 DATA_MESH_MANAGER_ROLENAME = 'DataMeshManager'
