@@ -1,7 +1,7 @@
 DEFAULT_TAGS = {
-                   'Key': 'Solution',
-                   'Value': 'DataMeshUtils'
-               },
+    'Key': 'Solution',
+    'Value': 'DataMeshUtils'
+}
 
 DOMAIN_TAG_KEY = 'Domain'
 DATA_PRODUCT_TAG_KEY = 'DataProduct'
