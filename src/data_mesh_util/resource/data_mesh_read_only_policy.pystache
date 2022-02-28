@@ -28,7 +28,9 @@
             ],
             "Resource": [
                 "arn:aws:glue:*::catalog",
+                "arn:aws:glue:*:*:catalog",
                 "arn:aws:glue:*::*/*",
+                "arn:aws:glue:*:*:*/*",
                 "arn:aws:lakeformation:*::*/*"
             ]
         }

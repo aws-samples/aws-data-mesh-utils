@@ -147,7 +147,8 @@ def assume_iam_role(role_name: str, region_name: str, target_account: str = None
             RoleSessionName=make_iam_session_name(_current_identity)
         )
 
-        return create_session(credentials=_creds.get('Credentials'), region=region_name), _creds.get('Credentials')
+        return create_session(credentials=_creds.get('Credentials'), region=region_name), _creds.get(
+            'Credentials'), _current_identity.get('Arn')
 
 
 def _validate_credentials(credentials) -> dict:

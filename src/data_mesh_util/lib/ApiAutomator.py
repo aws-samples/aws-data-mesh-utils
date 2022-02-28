@@ -703,9 +703,8 @@ class ApiAutomator:
             return f"arn:aws:iam::{self._target_account}:role/aws-service-role/lakeformation.amazonaws.com/AWSServiceRoleForLakeFormationDataAccess"
 
     def describe_table(self, database_name: str, table_name: str):
+        glue_client = self._get_client('glue')
         try:
-            glue_client = self._get_client('glue')
-
             table = glue_client.get_table(
                 DatabaseName=database_name,
                 Name=table_name
@@ -889,7 +888,7 @@ class ApiAutomator:
     def lf_grant_permissions(self, data_mesh_account_id: str, principal: str, database_name: str,
                              table_name: str = None,
                              permissions: list = ['ALL'],
-                             grantable_permissions: list = None) -> None:
+                             grantable_permissions: list = None) -> int:
         table_list = table_name if isinstance(table_name, list) else [table_name]
         return self.lf_batch_grant_permissions(
             data_mesh_account_id=data_mesh_account_id,
