@@ -138,7 +138,7 @@ class ApiAutomator:
                 Path=DATA_MESH_IAM_PATH,
                 PolicyDocument=policy_doc,
                 Description=policy_desc,
-                Tags=DEFAULT_TAGS
+                Tags=[DEFAULT_TAGS]
             )
             policy_arn = response.get('Policy').get('Arn')
             waiter = iam_client.get_waiter('policy_exists')
@@ -181,7 +181,7 @@ class ApiAutomator:
             response = iam_client.create_user(
                 Path=DATA_MESH_IAM_PATH,
                 UserName=role_name,
-                Tags=DEFAULT_TAGS
+                Tags=[DEFAULT_TAGS]
             )
             self._logger.info(f"Created new User {role_name}")
 
@@ -310,7 +310,7 @@ class ApiAutomator:
                 Path=DATA_MESH_IAM_PATH,
                 PolicyDocument=json.dumps(utils.create_assume_role_doc(resource=role_arn)),
                 Description=("Policy allowing the grantee the ability to assume Role %s" % role_arn),
-                Tags=DEFAULT_TAGS
+                Tags=[DEFAULT_TAGS]
             )
             policy_arn = response.get('Policy').get('Arn')
         except iam_client.exceptions.EntityAlreadyExistsException:
@@ -395,7 +395,7 @@ class ApiAutomator:
                 Path=DATA_MESH_IAM_PATH,
                 PolicyDocument=policy,
                 Description=(f"Policy allowing the grantee to pass Crawler Role {crawler_role_name}"),
-                Tags=DEFAULT_TAGS
+                Tags=[DEFAULT_TAGS]
             )
             policy_arn = response.get('Policy').get('Arn')
             waiter = iam_client.get_waiter('policy_exists')
@@ -929,7 +929,7 @@ class ApiAutomator:
                 LineageConfiguration={
                     'CrawlerLineageSettings': 'ENABLE' if enable_lineage is True else 'DISABLE'
                 },
-                Tags=utils.flatten_default_tags()
+                Tags=DEFAULT_TAGS
             )
             self._logger.info("Created new Glue Crawler %s" % crawler_name)
 

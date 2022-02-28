@@ -222,7 +222,7 @@ class SubscriberTracker:
                 'StreamEnabled': True,
                 'StreamViewType': 'NEW_AND_OLD_IMAGES'
             },
-            Tags=DEFAULT_TAGS
+            Tags=[DEFAULT_TAGS]
         )
 
         # block until the table is ACTIVE

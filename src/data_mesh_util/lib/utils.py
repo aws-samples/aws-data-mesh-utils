@@ -100,14 +100,6 @@ def create_assume_role_doc(aws_principals: list = None, resource: str = None, ad
     return document
 
 
-def flatten_default_tags():
-    output = {}
-    for t in DEFAULT_TAGS:
-        output[t.get('Key')] = t.get('Value')
-
-    return output
-
-
 def get_policy_arn(account_id: str, policy_name: str) -> str:
     return "arn:aws:iam::%s:policy%s%s" % (account_id, DATA_MESH_IAM_PATH, policy_name)
 
