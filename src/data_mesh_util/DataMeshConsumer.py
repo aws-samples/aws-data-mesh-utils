@@ -28,7 +28,9 @@ class DataMeshConsumer:
     _logger.addHandler(logging.StreamHandler(sys.stdout))
     _subscription_tracker = None
     _consumer_automator = None
+    _mesh_automator = None
     _ro_session = None
+    _ro_credentials = None
 
     def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
                  use_credentials=None):
@@ -40,9 +42,10 @@ class DataMeshConsumer:
         self._data_mesh_account_id = data_mesh_account_id
 
         # Assume the consumer account DataMeshConsumer role, unless we have been supplied temporary credentials for that role
-        self._session, _consumer_credentials = utils.assume_iam_role(role_name=DATA_MESH_CONSUMER_ROLENAME,
-                                                                     region_name=self._current_region,
-                                                                     use_credentials=use_credentials)
+        self._session, _consumer_credentials, _consumer_arn = utils.assume_iam_role(
+            role_name=DATA_MESH_CONSUMER_ROLENAME,
+            region_name=self._current_region,
+            use_credentials=use_credentials)
 
         self._sts_client = self._session.client('sts')
 
@@ -56,13 +59,13 @@ class DataMeshConsumer:
                                                 session=self._session, log_level=self._log_level)
 
         # assume the DataMeshConsumer-<account-id> role in the mesh
-        _data_mesh_session, _data_mesh_credentials = utils.assume_iam_role(
+        _data_mesh_session, _data_mesh_credentials, _data_mesh_arn = utils.assume_iam_role(
             role_name=utils.get_central_role_name(self._data_consumer_account_id, CONSUMER),
             region_name=self._current_region,
             use_credentials=_consumer_credentials,
             target_account=self._data_mesh_account_id
         )
-        self._logger.debug("Created new STS Session for Data Mesh Admin Consumer")
+        self._logger.debug("Created new STS Session for Data Mesh Consumer")
 
         utils.validate_correct_account(_data_mesh_credentials, data_mesh_account_id)
 
@@ -73,13 +76,16 @@ class DataMeshConsumer:
                                                        log_level=self._log_level)
 
         # finally, generate a read-only set of credentials in the mesh
-        self._ro_session = utils.assume_iam_role(
+        self._ro_session, _ro_creds, _ro_arn = utils.assume_iam_role(
             role_name=DATA_MESH_READONLY_ROLENAME,
             region_name=self._current_region,
             use_credentials=_data_mesh_credentials,
             target_account=self._data_mesh_account_id
         )
         self._logger.debug("Created new STS Session for Data Mesh Read Only")
+
+        self._mesh_automator = ApiAutomator(target_account=self._data_mesh_account_id,
+                                            session=self._ro_session, log_level=self._log_level)
 
     def request_access_to_product(self, owner_account_id: str, database_name: str,
                                   request_permissions: list, tables: list = None) -> dict:
@@ -96,9 +102,13 @@ class DataMeshConsumer:
         table_list = utils.ensure_list(tables)
         perm_list = utils.ensure_list(request_permissions)
 
+        # add a std out message if we are asking for an empty list of tables
+        if table_list == []:
+            print("Creating Database level Access Request")
+
         # validate that the object is visible to the consumer
         for t in table_list:
-            self._consumer_automator.describe_table(database_name=database_name, table_name=t)
+            self._mesh_automator.describe_table(database_name=database_name, table_name=t)
 
         return self._subscription_tracker.create_subscription_request(
             owner_account_id=owner_account_id,

@@ -27,6 +27,7 @@ class DataMeshProducer:
     _data_mesh_account_id = None
     _data_producer_role_arn = None
     _data_mesh_credentials = None
+    _data_mesh_arn = None
     _data_mesh_boto_session = None
     _subscription_tracker = None
     _data_producer_identity = None
@@ -43,9 +44,10 @@ class DataMeshProducer:
             self._current_region = region_name
 
         # Assume the producer account DataMeshProducer role, unless we have been supplied temporary credentials for that role
-        self._session, _producer_credentials = utils.assume_iam_role(role_name=DATA_MESH_PRODUCER_ROLENAME,
-                                                                     region_name=self._current_region,
-                                                                     use_credentials=use_credentials)
+        self._session, _producer_credentials, _producer_arn = utils.assume_iam_role(
+            role_name=DATA_MESH_PRODUCER_ROLENAME,
+            region_name=self._current_region,
+            use_credentials=use_credentials)
 
         self._iam_client = self._session.client('iam')
         self._sts_client = self._session.client('sts')
@@ -60,7 +62,7 @@ class DataMeshProducer:
                                                 session=self._session, log_level=self._log_level)
 
         # now assume the DataMeshProducer-<account-id> Role in the Mesh Account
-        self._data_mesh_session, self._data_mesh_credentials = utils.assume_iam_role(
+        self._data_mesh_session, self._data_mesh_credentials, self._data_mesh_arn = utils.assume_iam_role(
             role_name=utils.get_central_role_name(self._data_producer_account_id, PRODUCER),
             region_name=self._current_region,
             use_credentials=_producer_credentials,
@@ -137,7 +139,7 @@ class DataMeshProducer:
 
         # grant access to the producer account
         perms = ['INSERT', 'SELECT', 'ALTER', 'DELETE', 'DESCRIBE']
-        created_object = self._mesh_automator.lf_grant_permissions(
+        permissions_granted = self._mesh_automator.lf_grant_permissions(
             data_mesh_account_id=self._data_mesh_account_id,
             principal=producer_account_id,
             database_name=data_mesh_database_name,
@@ -148,7 +150,7 @@ class DataMeshProducer:
 
         # if create public metadata is True, then grant describe to the general data mesh consumer role
         if create_public_metadata is True:
-            created_object = self._mesh_automator.lf_grant_permissions(
+            self._mesh_automator.lf_grant_permissions(
                 data_mesh_account_id=self._data_mesh_account_id,
                 principal=utils.get_role_arn(self._data_mesh_account_id, DATA_MESH_READONLY_ROLENAME),
                 database_name=data_mesh_database_name,
@@ -156,9 +158,10 @@ class DataMeshProducer:
                 permissions=['DESCRIBE'],
                 grantable_permissions=None
             )
+            self._logger.info(f"Granted Describe on {table_name} to {DATA_MESH_READONLY_ROLENAME}")
 
         # in the producer account, accept the RAM share after 1 second - seems to be an async delay
-        if created_object is not None:
+        if permissions_granted > 0:
             time.sleep(1)
             self._producer_automator.accept_pending_lf_resource_shares(
                 sender_account=data_mesh_account_id
@@ -223,6 +226,9 @@ class DataMeshProducer:
                              expose_data_mesh_db_name: str = None,
                              expose_table_references_with_suffix: str = "_link",
                              use_original_table_name: bool = False):
+        if create_public_metadata is None:
+            create_public_metadata = True
+
         # generate the target database name for the mesh
         data_mesh_database_name = self._make_database_name(source_database_name)
         if expose_data_mesh_db_name is not None:
@@ -261,6 +267,17 @@ class DataMeshProducer:
             grantable_permissions=None
         )
         self._logger.info("Granted access on Database %s to Producer" % data_mesh_database_name)
+
+        # grant the mesh permissions to administer the database
+        self._mesh_automator.lf_grant_permissions(
+            data_mesh_account_id=self._data_mesh_account_id,
+            principal=self._data_mesh_arn,
+            database_name=data_mesh_database_name,
+            permissions=['ALL'],
+            grantable_permissions=None
+        )
+        self._logger.info(
+            f"Granted describe access on Database {data_mesh_database_name} to Data Mesh {self._data_mesh_account_id}")
 
         # get or create a data mesh shared database in the producer account
         self._producer_automator.get_or_create_database(
@@ -302,7 +319,7 @@ class DataMeshProducer:
                 Permissions=['DATA_LOCATION_ACCESS']
             )
 
-            # create a mesh table for the local copy
+            # create a mesh table for the data product table
             created_table = self._create_mesh_table(
                 table_def=table,
                 data_mesh_glue_client=data_mesh_glue_client,
@@ -314,6 +331,18 @@ class DataMeshProducer:
                 expose_table_references_with_suffix=expose_table_references_with_suffix,
                 use_original_table_name=use_original_table_name
             )
+
+            # grant the mesh permissions to describe and select from the table
+            self._mesh_automator.lf_grant_permissions(
+                data_mesh_account_id=self._data_mesh_account_id,
+                principal=self._data_mesh_arn,
+                database_name=data_mesh_database_name,
+                table_name=table.get('Name'),
+                permissions=['DESCRIBE', 'SELECT'],
+                grantable_permissions=None
+            )
+            self._logger.info(
+                f"Granted describe access on Table {table.get('Name')} to Data Mesh {self._data_mesh_account_id}")
 
             shared_objects.get('Tables').append({
                 'SourceTable': created_table[0],
