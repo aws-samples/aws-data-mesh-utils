@@ -692,9 +692,15 @@ class ApiAutomator:
             )
 
             # drop the data lake location
-            lf_client.deregister_resource(
-                ResourceArn=dummy_s3_arn
-            )
+            try:
+                lf_client.deregister_resource(
+                    ResourceArn=dummy_s3_arn
+                )
+            except lf_client.exceptions.InvalidInputException as e:
+                if "Must manually delete service-linked role to deregister last S3 location" in str(e):
+                    pass
+                else:
+                    raise e
 
             # drop the bucket
             self._drop_dummy_bucket()
