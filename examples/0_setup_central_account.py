@@ -53,6 +53,8 @@ class Step0():
 
 
 if __name__ == '__main__':
+    utils.purify_sysargs()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--producer_crawler_role_arn', dest='producer_crawler_role_arn', required=False)
     parser.add_argument('--consumer_crawler_role_arn', dest='consumer_crawler_role_arn', required=False)

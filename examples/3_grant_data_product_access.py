@@ -49,6 +49,8 @@ class Step3():
 
 
 if __name__ == "__main__":
+    utils.purify_sysargs()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--subscription_id', dest='subscription_id', required=True)
     parser.add_argument('--grant_permissions', nargs="+", dest='grant_permissions', required=True)

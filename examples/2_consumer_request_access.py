@@ -40,6 +40,8 @@ class Step2():
 
 
 if __name__ == "__main__":
+    utils.purify_sysargs()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--database_name', dest='database_name', required=True)
     parser.add_argument('--tables', nargs="+", dest='tables', required=True)
