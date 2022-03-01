@@ -232,7 +232,7 @@ class ApiAutomator:
                         utils.create_assume_role_doc(aws_principals=aws_principals,
                                                      additional_principals=additional_assuming_principals)),
                     Description=role_desc,
-                    Tags=DEFAULT_TAGS
+                    Tags=[DEFAULT_TAGS]
                 )
                 # wait for role active
                 waiter = iam_client.get_waiter('role_exists')
