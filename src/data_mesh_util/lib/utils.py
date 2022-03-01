@@ -101,25 +101,6 @@ def create_assume_role_doc(aws_principals: list = None, resource: str = None, ad
     return document
 
 
-def bulk_strip_quot(values: list) -> tuple:
-    '''
-    Method to bulk remove double quotes from a list of string values and value lists
-    :param values:
-    :return:
-    '''
-    out = []
-    for i, value in enumerate(values):
-        if isinstance(value, list):
-            new_list = []
-            for v in value:
-                new_list.append(strip_quot(v))
-            out.append(new_list)
-        else:
-            out.append(strip_quot(value))
-
-    return tuple(out)
-
-
 def strip_quot(value: str) -> str:
     '''
     Method to remove both single and double quotes from a string value
