@@ -6,6 +6,7 @@ except ImportError:
 from data_mesh_util.lib.constants import *
 
 import os
+import sys
 import pystache
 import botocore
 import boto3
@@ -98,6 +99,50 @@ def create_assume_role_doc(aws_principals: list = None, resource: str = None, ad
         document.get('Statement')[0]['Resource'] = resource
 
     return document
+
+
+def strip_quot(value: str) -> str:
+    '''
+    Method to remove both single and double quotes from a string value
+    :param value:
+    :return:
+    '''
+    return value.replace('"', '').replace("'", "")
+
+
+# load required args for runtimes into sys.argv
+def load_sysarg(key: str, value: str) -> None:
+    sys.argv.append(f"--{key}")
+    sys.argv.append(value)
+
+
+def strip_sysarg_quots() -> None:
+    '''
+    Strip all quotes from argument values from sys.argv
+    :return:
+    '''
+    for i, value in enumerate(sys.argv):
+        if value[:2] != '--':
+            sys.argv[i] = strip_quot(value)
+
+
+def purify_sysargs() -> None:
+    '''
+    Convert sysargv values from dashed format 'my-value' to underscore 'my_value', and remove all single and double quotes form arg values
+    :return:
+    '''
+    underscore_sysargs()
+    strip_sysarg_quots()
+
+
+def underscore_sysargs() -> None:
+    '''
+    convert dashed arg names to underscore - annoying for users if we don't do this. all usage will show underscore
+    :return:
+    '''
+    for i, value in enumerate(sys.argv):
+        if value[:2] == '--':
+            sys.argv[i] = f"--{value[2:].replace('-', '_')}"
 
 
 def get_policy_arn(account_id: str, policy_name: str) -> str:

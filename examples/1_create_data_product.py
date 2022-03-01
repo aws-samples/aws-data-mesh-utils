@@ -52,6 +52,8 @@ class Step1():
 
 
 if __name__ == "__main__":
+    utils.purify_sysargs()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--database_name', dest='database_name', required=True)
     parser.add_argument('--table_regex', dest='table_regex', required=True)

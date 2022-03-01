@@ -58,6 +58,8 @@ class Step0_5():
 
 
 if __name__ == '__main__':
+    utils.purify_sysargs()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--use_role', dest='use_role', required=True, choices=[CONSUMER, PRODUCER, BOTH])
     parser.add_argument('--crawler_role_arn', dest='crawler_role_arn', required=False)

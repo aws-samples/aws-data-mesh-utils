@@ -224,18 +224,6 @@ def _get_req_opt_constructor_args(cls) -> tuple:
     return _extract_req_opt_params(constructor_args)
 
 
-# load required args for runtimes into sys.argv
-def _load_sysarg(key: str, value: str) -> None:
-    sys.argv.append(f"--{key}")
-    sys.argv.append(value)
-
-
-def _underscore_sysargs() -> None:
-    for i, value in enumerate(sys.argv):
-        if value[:2] == '--':
-            sys.argv[i] = f"--{value[2:].replace('-', '_')}"
-
-
 class DataMeshCli:
     _caller_name = "DataMeshCli"
     _all_commands = None
@@ -275,9 +263,9 @@ class DataMeshCli:
         self._region, x, self._account_ids, self._creds = utils.load_client_info_from_file(
             from_filename)
 
-        _load_sysarg("region_name", self._region)
+        utils.load_sysarg("region_name", self._region)
         if MESH in self._account_ids:
-            _load_sysarg("data_mesh_account_id", self._account_ids.get(MESH))
+            utils.load_sysarg("data_mesh_account_id", self._account_ids.get(MESH))
 
     def run(self):
         '''
@@ -287,8 +275,8 @@ class DataMeshCli:
         if len(sys.argv) == 1:
             _cli_usage("No Valid Arguments Supplied")
 
-        # convert dashed arg names to underscore - annoying for users if we don't do this. all usage will show underscore
-        _underscore_sysargs()
+        # fix sys.argv values which might contain rubbish
+        utils.purify_sysargs()
 
         # create an argument parser with the caller name listed so we get a nice usage string
         parser = argparse.ArgumentParser(prog=self._caller_name)
