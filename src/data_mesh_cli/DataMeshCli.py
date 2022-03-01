@@ -297,6 +297,12 @@ class DataMeshCli:
         # load the command context
         context = command_data.get('Context')
 
+        # lookup the class for the context
+        cls = CONTEXT_MAPPING.get(context)
+
+        if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
+            _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)
+
         if context == 'Macro' and cred_args.credentials_file is None:
             raise Exception("This method requires the use of a credentials_file")
 
@@ -306,12 +312,6 @@ class DataMeshCli:
 
         if cred_args.credentials_file is None and cred_args.use_credentials is None:
             print("Will load credentials from boto environment")
-
-        # lookup the class for the context
-        cls = CONTEXT_MAPPING.get(context)
-
-        if len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2].lower() == 'help'):
-            _command_usage(self._caller_name, command_name, command_data.get("Method"), cls)
 
         # reset parser and add constructor args for callable classes
         parser = argparse.ArgumentParser(prog=self._caller_name)
