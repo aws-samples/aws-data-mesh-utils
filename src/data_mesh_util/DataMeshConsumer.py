@@ -88,7 +88,7 @@ class DataMeshConsumer:
                                             session=self._ro_session, log_level=self._log_level)
 
     def request_access_to_product(self, owner_account_id: str, database_name: str,
-                                  request_permissions: list, tables: list = None) -> dict:
+                                  tables: list, request_permissions: list) -> dict:
         '''
         Requests access to a specific data product from the data mesh. Request can be for an entire database, a specific
         table, but is restricted to a single principal. If no principal is provided, grants will be applied to the requesting

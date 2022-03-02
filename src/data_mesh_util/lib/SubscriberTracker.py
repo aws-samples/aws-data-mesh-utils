@@ -243,25 +243,41 @@ class SubscriberTracker:
             if not exists:
                 raise Exception("Table %s does not exist in Database %s" % (table_name, database_name))
 
-    def _validate_object(self, database_name: str, table_name: str, suppress_object_validation: bool = False):
+    def _validate_object(self, database_name: str, table_name: str = None, suppress_object_validation: bool = False):
         if suppress_object_validation is True:
             return True
         else:
-            try:
-                response = self._glue_client.get_table(
-                    DatabaseName=database_name,
-                    Name=table_name
-                )
+            if table_name is not None:
+                try:
+                    response = self._glue_client.get_table(
+                        DatabaseName=database_name,
+                        Name=table_name
+                    )
 
-                if 'Table' not in response:
+                    if 'Table' not in response:
+                        return False
+                    else:
+                        return True
+                except (
+                        self._glue_client.exceptions.AccessDeniedException,
+                        self._glue_client.exceptions.EntityNotFoundException):
+                    # if we get access denied here, it's because the object doesn't exist
                     return False
-                else:
-                    return True
-            except (
-                    self._glue_client.exceptions.AccessDeniedException,
-                    self._glue_client.exceptions.EntityNotFoundException):
-                # if we get access denied here, it's because the object doesn't exist
-                return False
+            else:
+                try:
+                    response = self._glue_client.get_database(
+                        Name=database_name
+                    )
+
+                    if 'Database' not in response:
+                        return False
+                    else:
+                        return True
+                except (
+                        self._glue_client.exceptions.AccessDeniedException,
+                        self._glue_client.exceptions.EntityNotFoundException):
+                    # if we get access denied here, it's because the object doesn't exist
+                    return False
 
     def create_subscription_request(self, owner_account_id: str, principal: str,
                                     request_grants: list, domain=None, data_product_name=None,
@@ -271,7 +287,7 @@ class SubscriberTracker:
         subscription_type = None
         if database_name is not None:
             filter = Attr(DATABASE_NAME).eq(database_name)
-            if tables is None:
+            if tables is None or tables == []:
                 subscription_type = SubType.DATABASE
             else:
                 subscription_type = SubType.TABLE
