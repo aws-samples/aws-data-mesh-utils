@@ -441,7 +441,7 @@ class DataMeshProducer:
             raise Exception(f"Subscription is already Active")
 
         # approver can override the requested grants
-        if grant_perms is None:
+        if grant_perms is None or grant_perms == []:
             set_permissions = subscription.get(REQUESTED_GRANTS)
         else:
             set_permissions = grant_perms
@@ -454,11 +454,21 @@ class DataMeshProducer:
 
         table_arns = []
 
-        table_list = None
-        if isinstance(tables, list):
-            table_list = tables
-        else:
-            table_list = [tables]
+        table_list = []
+        if tables is not None:
+            if isinstance(tables, list):
+                table_list = tables
+            else:
+                table_list = [tables]
+
+        # grant describe on the database
+        self._mesh_automator.lf_grant_permissions(
+            data_mesh_account_id=self._data_mesh_account_id,
+            principal=subscription.get(SUBSCRIBER_PRINCIPAL),
+            database_name=subscription.get(DATABASE_NAME),
+            permissions=['DESCRIBE'],
+            grantable_permissions=None
+        )
 
         for t in table_list:
             # confirm that the requested object exists
@@ -485,15 +495,6 @@ class DataMeshProducer:
                 self._producer_automator.add_bucket_policy_entry(
                     principal_account=subscription.get(SUBSCRIBER_PRINCIPAL),
                     access_path=table_bucket
-                )
-
-                # grant describe on the database
-                self._mesh_automator.lf_grant_permissions(
-                    data_mesh_account_id=self._data_mesh_account_id,
-                    principal=subscription.get(SUBSCRIBER_PRINCIPAL),
-                    database_name=subscription.get(DATABASE_NAME),
-                    permissions=['DESCRIBE'],
-                    grantable_permissions=None
                 )
 
                 # grant validated permissions to object
