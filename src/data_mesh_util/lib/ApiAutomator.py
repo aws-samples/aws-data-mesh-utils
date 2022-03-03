@@ -59,7 +59,7 @@ class ApiAutomator:
             trusted_entities.append(trust_role_name)
             policy_doc.get('Statement')[0].get('Principal')['AWS'] = trusted_entities
 
-        print(policy_doc)
+        self._logger.debug(policy_doc)
         iam_client.update_assume_role_policy(RoleName=update_role_name, PolicyDocument=json.dumps(policy_doc))
 
         self._logger.info("Enabled Account %s to assume %s" % (account_id_to_trust, update_role_name))
@@ -257,6 +257,7 @@ class ApiAutomator:
         # attach the created policy to the role
         policy_attached = False
         retries = 0
+
         while policy_attached is False and retries < 5:
             try:
                 iam_client.attach_role_policy(
@@ -268,6 +269,10 @@ class ApiAutomator:
             except iam_client.exceptions.MalformedPolicyDocumentException as mpde:
                 if "Invalid principal" in str(mpde):
                     # this is raised when something within IAM hasn't yet propagated correctly.
+                    time.sleep(2)
+                    retries += 1
+            except iam_client.exceptions.NoSuchEntityException as nse:
+                if f"The role with name {role_name} cannot be found." in str(nse):
                     time.sleep(2)
                     retries += 1
 
@@ -983,13 +988,14 @@ class ApiAutomator:
 
         # create the database
         try:
-            created_db = glue_client.create_database(
+            glue_client.create_database(
                 **args
             )
 
             # tag the database with default tags
+            db_arn = utils.get_db_arn(region_name=glue_client.meta.region_name, database_name=database_name)
             glue_client.tag_resource(
-                ResourceArn=created_db.get('Arn'),
+                ResourceArn=db_arn,
                 TagsToAdd=DEFAULT_TAGS
             )
         except glue_client.exceptions.AlreadyExistsException:

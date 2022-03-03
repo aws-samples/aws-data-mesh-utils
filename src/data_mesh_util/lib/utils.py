@@ -75,6 +75,10 @@ def get_table_arn(region_name: str, catalog_id: str, database_name: str, table_n
     return f"arn:aws:glue:{region_name}:{catalog_id}:table/{database_name}/{table_name}"
 
 
+def get_db_arn(region_name: str, catalog_id: str, database_name: str) -> str:
+    return f"arn:aws:glue:{region_name}:{catalog_id}:database/{database_name}"
+
+
 def create_assume_role_doc(aws_principals: list = None, resource: str = None, additional_principals: dict = None):
     document = {
         "Version": "2012-10-17",
