@@ -77,7 +77,7 @@ This functionality is presented to customers as a Python library to allow maximu
 
 ### Example Credentials File
 
-For the example usage scripts, you can configure a file on your filesystem with the following structure, which includes Access and Secret Keys for each of the personas used to demonstrate the functionality. You then reference this file in the examples through the `CredentialsFile` environment variable.
+To run these functions, you must provide identities that can operate on the producer, consumer, or mesh accounts. These can be configured in a credentials file for simplicity, with the following structure:
 
 ```
 {
@@ -110,7 +110,15 @@ For the example usage scripts, you can configure a file on your filesystem with 
 }
 ```
 
-Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
+This file includes the following identities:
+
+* **Mesh** - Administrative identity used to configure and manage central Data Mesh objects like catalogs and shared tables. This identity is required for initializing the Data Mesh infrastructure.
+* **ProducerAdmin** - Administrative identity used to setup an account as as data producer. This identity is only used to enable an AWS account on initial setup.
+* **ConsumerAdmin** - Administrative identity used to setup an account as as data consumer. This identity is only used to enable an AWS account on initial setup.
+* **Producer** - Identity used for day-to-day producer tasks such as `create-data-product`, `approve-access-request` and `modify-subscription`. In general, you should use the pre-installed `DataMeshProducer` user or those users who are part of the `DataMeshProducerGroup` in the Producer AWS Account.
+* **Consumer** - Identity used for day-to-day consumer tasks such as `request-access` and `import-subscription`. In general, you should use the pre-installed `DataMeshConsumer` user or those users who are part of the `DataMeshConsumerGroup` in the Consumer AWS Account.
+
+For the example usage scripts, you can configure a file on your filesystem, and eference this file in through the `CredentialsFile` environment variable. For the `cli`, you can provide the path to this file using argument `--credentials-file`. Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
 
 ## Getting Started
 
