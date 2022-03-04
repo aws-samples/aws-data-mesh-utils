@@ -23,7 +23,8 @@
                 "glue:CreateTable",
                 "glue:CreateTables",
                 "glue:CreateCrawler",
-                "glue:Update*"
+                "glue:Update*",
+                "glue:TagResource"
             ],
             "Resource": "*"
         },
