@@ -917,36 +917,36 @@ class ApiAutomator:
         try:
             glue_client.get_crawler(Name=crawler_name)
         except glue_client.exceptions.from_code('EntityNotFoundException'):
-            glue_client.create_crawler(
-                Name=crawler_name,
-                Role=crawler_role,
-                DatabaseName=database_name,
-                Description="S3 Crawler to sync structure of %s.%s to Data Mesh" % (database_name, table_name),
-                Targets={
-                    'S3Targets': [
-                        {
-                            'Path': s3_location
-                        },
-                    ]
-                },
-                Schedule="cron(0 */4 * * ? *)" if sync_schedule is None else sync_schedule,
-                SchemaChangePolicy={
-                    'UpdateBehavior': 'LOG',
-                    'DeleteBehavior': 'LOG'
-                },
-                RecrawlPolicy={
-                    'RecrawlBehavior': 'CRAWL_NEW_FOLDERS_ONLY'
-                },
-                LineageConfiguration={
-                    'CrawlerLineageSettings': 'ENABLE' if enable_lineage is True else 'DISABLE'
-                },
-                Tags=DEFAULT_TAGS
-            )
-            self._logger.info("Created new Glue Crawler %s" % crawler_name)
-
-        # create lakeformation permissions in the mesh account for the glue crawler role
-
-        # create s3 permission for glue crawler role
+            try:
+                glue_client.create_crawler(
+                    Name=crawler_name,
+                    Role=crawler_role,
+                    DatabaseName=database_name,
+                    Description="S3 Crawler to sync structure of %s.%s to Data Mesh" % (database_name, table_name),
+                    Targets={
+                        'S3Targets': [
+                            {
+                                'Path': s3_location
+                            },
+                        ]
+                    },
+                    Schedule="cron(0 */4 * * ? *)" if sync_schedule is None else sync_schedule,
+                    SchemaChangePolicy={
+                        'UpdateBehavior': 'LOG',
+                        'DeleteBehavior': 'LOG'
+                    },
+                    RecrawlPolicy={
+                        'RecrawlBehavior': 'CRAWL_NEW_FOLDERS_ONLY'
+                    },
+                    LineageConfiguration={
+                        'CrawlerLineageSettings': 'ENABLE' if enable_lineage is True else 'DISABLE'
+                    },
+                    Tags=DEFAULT_TAGS
+                )
+                self._logger.info("Created new Glue Crawler %s" % crawler_name)
+            except glue_client.exceptions.AccessDeniedException as ade:
+                self._logger.error(
+                    "Cannot create Glue Crawler - caller doesn't have permissions or is missing iam::PassRole")
 
         return crawler_name
 
@@ -992,8 +992,11 @@ class ApiAutomator:
                 **args
             )
 
+            this_account_id = self._get_client('sts').get_caller_identity().get('Account')
+
             # tag the database with default tags
-            db_arn = utils.get_db_arn(region_name=glue_client.meta.region_name, database_name=database_name)
+            db_arn = utils.get_db_arn(region_name=glue_client.meta.region_name, catalog_id=this_account_id,
+                                      database_name=database_name)
             glue_client.tag_resource(
                 ResourceArn=db_arn,
                 TagsToAdd=DEFAULT_TAGS

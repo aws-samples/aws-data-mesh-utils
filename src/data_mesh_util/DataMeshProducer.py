@@ -47,7 +47,8 @@ class DataMeshProducer:
         self._session, _producer_credentials, _producer_arn = utils.assume_iam_role(
             role_name=DATA_MESH_PRODUCER_ROLENAME,
             region_name=self._current_region,
-            use_credentials=use_credentials)
+            use_credentials=use_credentials
+        )
 
         self._iam_client = self._session.client('iam')
         self._sts_client = self._session.client('sts')
@@ -282,7 +283,7 @@ class DataMeshProducer:
         # get or create a data mesh shared database in the producer account
         self._producer_automator.get_or_create_database(
             database_name=data_mesh_database_name,
-            database_desc="Database to contain objects objects shared with the Data Mesh Account",
+            database_desc="Database to contain objects objects shared with the Data Mesh Account"
         )
         self._logger.info("Validated Producer Account Database %s" % data_mesh_database_name)
 
