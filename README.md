@@ -275,7 +275,7 @@ The above Steps 1.1 and 1.2 can be run for any number of accounts that you requi
 
 ### Step 2: Create a Data Product
 
-Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. To create a data product:
+Data products can be created from one-or-more Glue tables, and the API provides a variety of configuration options to allow you to control how they are exposed. To create a data product:
 
 ```python
 import logging
@@ -313,7 +313,8 @@ data_mesh_producer.create_data_products(
     sync_mesh_catalog_schedule=cron_expr,
     sync_mesh_crawler_role_arn=crawler_role,
     expose_data_mesh_db_name=None,
-    expose_table_references_with_suffix=None
+    expose_table_references_with_suffix=None,
+    use_original_table_name=None
 )
 ```
 or
@@ -323,6 +324,27 @@ or
 ```
 
 You can also use [examples/1\_create\_data\_product.py](examples/1_create_data_product.py) as an example to build your own application.
+
+By default, a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account. The new tables created in the Data Mesh account are shared back to the Producer account through a new database and resource link which let's the Producer change objects in the mesh from within their own Account.
+
+Alternatively, some customers may wish to have a single version of their table metadata which only resides within the Data Mesh, for example for when datasets are prepared specifically for sharing. In this case, the `create-data-product` request allows for the version of the Table in the Data Mesh to be the only master copy, and transparently shared back to the producer. To use this option, instead use API `migrate_tables_to_mesh`:
+
+```
+...
+
+data_mesh_producer.migrate_tables_to_mesh(
+    source_database_name=database_name,
+    table_name_regex=table_name,
+    domain=domain_name,
+    data_product_name=data_product_name,
+    create_public_metadata=True,
+    sync_mesh_catalog_schedule=cron_expr,
+    sync_mesh_crawler_role_arn=crawler_role
+)
+
+```
+
+Upon completion, you will see that the table in the Producer AWS Account has been replaced with a Resource Link shared from the Mesh Account.
 
 ### Step 3: Request access to a Data Product Table
 
