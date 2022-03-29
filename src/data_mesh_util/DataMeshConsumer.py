@@ -136,13 +136,30 @@ class DataMeshConsumer:
             source_account=self._data_mesh_account_id
         )
 
-        self._consumer_automator.accept_pending_lf_resource_shares(
-            sender_account=self._data_mesh_account_id
-        )
+        shares = []
+        for k, v in subscription.get(RAM_SHARES).items():
+            shares.append(v.get('arn'))
 
+        # accept the RAM shares attached to the subscription
+        accepted, active, not_found = self._consumer_automator.accept_lf_resource_shares(
+            share_list=shares)
+
+        if len(accepted) > 0:
+            self._logger.info(f"Accepted {len(accepted)} RAM Shares: {str(accepted)}")
+
+        if len(active) > 0:
+            self._logger.info(
+                f"{len(active)} RAM Shares already in Active state")
+
+        if len(not_found) > 0:
+            self._logger.warning(
+                f"Unable to resolve {len(not_found)} RAM Shares: {str(not_found)}")
+
+        # mark the subscription as finalized
         self._subscription_tracker.mark_subscription_as_imported(
             subscription_id=subscription_id
         )
+        self._logger.info(f"Subscription Import Complete")
 
     def get_subscription(self, request_id: str) -> dict:
         return self._subscription_tracker.get_subscription(subscription_id=request_id)

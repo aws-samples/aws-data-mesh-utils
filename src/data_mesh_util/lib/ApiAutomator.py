@@ -219,6 +219,13 @@ class ApiAutomator:
 
         self._logger.debug("Waiting for User to be ready for inclusion in AssumeRolePolicy")
 
+        # attach the data access policy to the group
+        iam_client.attach_group_policy(
+            GroupName=group_name,
+            PolicyArn=policy_arn
+        )
+        self._logger.info(f"Attached Policy {policy_arn} to Group {group_name}")
+
         role_created = False
         retries = 0
         while role_created is False and retries < 5:
@@ -265,7 +272,7 @@ class ApiAutomator:
                     PolicyArn=policy_arn
                 )
                 policy_attached = True
-                self._logger.info(f"Attached Policy {policy_arn} to {role_name}")
+                self._logger.info(f"Attached Policy {policy_arn} to Role {role_name}")
             except iam_client.exceptions.MalformedPolicyDocumentException as mpde:
                 if "Invalid principal" in str(mpde):
                     # this is raised when something within IAM hasn't yet propagated correctly.
@@ -1147,14 +1154,54 @@ class ApiAutomator:
         # put the policy back into the bucket store
         s3_client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(new_policy))
 
+    def accept_lf_resource_shares(self, share_list: list) -> tuple:
+        '''
+        Causes a list of RAM shares to be accepted by the caller
+        :param share_list:
+        :return:
+        '''
+        ram_client = self._get_client('ram')
+
+        get_response = ram_client.get_resource_share_invitations()
+
+        # only accept peding lakeformation shares from the source account
+        shares_accepted = []
+        shares_active = []
+        shares_not_found = []
+        for r in get_response.get('resourceShareInvitations'):
+            share_arn = r.get('resourceShareArn')
+            if share_arn in share_list:
+                if r.get('status') == 'PENDING':
+                    ram_client.accept_resource_share_invitation(
+                        resourceShareInvitationArn=r.get('resourceShareInvitationArn')
+                    )
+                    shares_accepted.append(share_arn)
+                    self._logger.info(f"Accepted RAM Share {share_arn}")
+                elif r.get('status') == 'ACCEPTED':
+                    shares_active.append(share_arn)
+                else:
+                    shares_not_found.append(share_arn)
+            else:
+                shares_not_found.append(share_arn)
+
+        return shares_accepted, shares_active, shares_not_found
+
     def accept_pending_lf_resource_shares(self, sender_account: str, filter_resource_arn: str = None):
+        '''
+        Accepts all pending resource shares of the specified type from the sending account. Used to automatically accept
+        shares from the data mesh back to the producer
+
+        :param sender_account:
+        :param filter_resource_arn:
+        :return:
+        '''
         ram_client = self._get_client('ram')
 
         get_response = ram_client.get_resource_share_invitations()
 
         accepted_share = False
         for r in get_response.get('resourceShareInvitations'):
-            # only accept peding lakeformation shares from the source account
+            # only accept pending lakeformation shares from the source account
             if r.get('senderAccountId') == sender_account and 'LakeFormation' in r.get('resourceShareName') and r.get(
                     'status') == 'PENDING':
                 if filter_resource_arn is None or r.get('resourceShareArn') == filter_resource_arn:
