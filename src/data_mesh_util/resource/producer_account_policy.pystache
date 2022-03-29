@@ -21,10 +21,10 @@
                 "glue:GetDatabase",
                 "glue:CreateDatabase",
                 "glue:CreateTable",
-                "glue:CreateTables",
                 "glue:CreateCrawler",
                 "glue:Update*",
-                "glue:TagResource"
+                "glue:TagResource",
+                "glue:SearchTables"
             ],
             "Resource": "*"
         },

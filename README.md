@@ -204,7 +204,6 @@ You can also use [examples/0\_5\_setup\_account\_as.py](examples/0_5_setup_accou
 Accounts can be both producers and consumers, so you may wish to run this step against the account used above. You may also have Accounts that are Consumer only, and cannot create data shares. This step is only run once per AWS Account and must be run using credentials that have AdministratorAccess as well as being Lake Formation Data Lake Admin:
 
 ```python
-import logging
 from data_mesh_util.lib.constants import *
 from data_mesh_util import DataMeshMacros as data_mesh_macros
 
@@ -244,7 +243,6 @@ The above Steps 1.1 and 1.2 can be run for any number of accounts that you requi
 Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. To create a data product:
 
 ```python
-import logging
 from data_mesh_util import DataMeshProducer as dmp
 
 data_mesh_account = 'insert data mesh account number here'
@@ -285,12 +283,13 @@ data_mesh_producer.create_data_products(
 
 You can also use [examples/1\_create\_data\_product.py](examples/1_create_data_product.py) as an example to build your own application.
 
+Please note that upon creation of a data product, you will see a new Database and Table created in the Data Mesh Account, and this Database and Table have been shared back to the producer AWS Account using Resource Access Manager (RAM). Your producer Account may now be able to query data both from within the data mesh and from their own account, but the security Principal used for Data Mesh Utils may require additional permissions to use Athena or other query services.
+
 ### Step 3: Request access to a Data Product Table
 
 As a consumer, you can gain view public metadata by assuming the `DataMeshReadOnly` role in the mesh account. You can then create an access request for data products using:
 
 ```python
-import logging
 from data_mesh_util import DataMeshConsumer as dmc
 
 data_mesh_account = 'insert data mesh account number here'
@@ -303,7 +302,6 @@ consumer_credentials = {
 }
 data_mesh_consumer = dmp.DataMeshConsumer(
     data_mesh_account_id=data_mesh_account,
-    log_level=logging.DEBUG,
     region_name=aws_region,
     use_credentials=consumer_credentials
 )
@@ -329,7 +327,6 @@ You can also use [examples/2\_consumer\_request\_access.py](examples/2_consumer_
 In this step, you will grant permissions to the Consumer who has requested access:
 
 ```python
-import logging
 from data_mesh_util import DataMeshProducer as dmp
 
 data_mesh_account = 'insert data mesh account number here'
@@ -342,7 +339,6 @@ producer_credentials = {
 }
 data_mesh_producer = dmp.DataMeshProducer(
    data_mesh_account_id=data_mesh_account,
-   log_level=logging.DEBUG,
    region_name=aws_region,
 	use_credentials=producer_credentials
 )
@@ -381,7 +377,6 @@ You can also use [examples/3\_grant\_data\_product\_access.py](examples/3_grant_
 Permissions have been granted, but the Consumer must allow those grants to be imported into their account:
 
 ```python
-import logging
 from data_mesh_util import DataMeshConsumer as dmc
 
 data_mesh_account = 'insert data mesh account number here'
@@ -394,7 +389,6 @@ consumer_credentials = {
 }
 data_mesh_consumer = dmp.DataMeshConsumer(
     data_mesh_account_id=data_mesh_account,
-    log_level=logging.DEBUG,
     region_name=aws_region,
     use_credentials=consumer_credentials
 )
