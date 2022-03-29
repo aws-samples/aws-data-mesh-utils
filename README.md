@@ -77,7 +77,7 @@ This functionality is presented to customers as a Python library to allow maximu
 
 ### Example Credentials File
 
-For the example usage scripts, you can configure a file on your filesystem with the following structure, which includes Access and Secret Keys for each of the personas used to demonstrate the functionality. You then reference this file in the examples through the `CredentialsFile` environment variable.
+To run these functions, you must provide identities that can operate on the producer, consumer, or mesh accounts. These can be configured in a credentials file for simplicity, with the following structure:
 
 ```
 {
@@ -110,7 +110,15 @@ For the example usage scripts, you can configure a file on your filesystem with 
 }
 ```
 
-Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
+This file includes the following identities:
+
+* **Mesh** - Administrative identity used to configure and manage central Data Mesh objects like catalogs and shared tables. This identity is required for initializing the Data Mesh infrastructure.
+* **ProducerAdmin** - Administrative identity used to setup an account as as data producer. This identity is only used to enable an AWS account on initial setup.
+* **ConsumerAdmin** - Administrative identity used to setup an account as as data consumer. This identity is only used to enable an AWS account on initial setup.
+* **Producer** - Identity used for day-to-day producer tasks such as `create-data-product`, `approve-access-request` and `modify-subscription`. In general, you should use the pre-installed `DataMeshProducer` user or those users who are part of the `DataMeshProducerGroup` in the Producer AWS Account.
+* **Consumer** - Identity used for day-to-day consumer tasks such as `request-access` and `import-subscription`. In general, you should use the pre-installed `DataMeshConsumer` user or those users who are part of the `DataMeshConsumerGroup` in the Consumer AWS Account.
+
+For the example usage scripts, you can configure a file on your filesystem, and eference this file in through the `CredentialsFile` environment variable. For the `cli`, you can provide the path to this file using argument `--credentials-file`. Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
 
 ## Getting Started
 
@@ -154,7 +162,21 @@ mesh_admin = dmu.DataMeshAdmin(
 mesh_admin.initialize_mesh_account()
 ```
 
+or
+
+```
+./data-mesh-cli install-mesh-objects --credentials-file <my credentials file> ...
+```
+
 You can also use [examples/0\_setup\_central\_account.py](examples/0_setup_central_account.py)  as an example to build your own application.
+
+If you get an error that looks like:
+
+```
+An error occurred (AccessDeniedException) when calling the PutDataLakeSettings operation: User: arn:aws:iam::<account>:user/<user> is not authorized to perform: lakeformation:PutDataLakeSettings on resource: arn:aws:lakeformation:us-east-1:<account>:catalog:<account> with an explicit deny in an identity-based policy
+```
+
+This probably means that you have attached the `AWSLakeFormationDataAdmin` IAM policy to your user, which prevents you setting data lake permissions.
 
 ### Step 1.1 - Enable an AWS Account as a Producer
 
@@ -197,6 +219,13 @@ mesh_macros.bootstrap_account(
     account_credentials=producer_credentials
 )
 ```
+
+or
+
+```
+./data-mesh-cli enable-account --credentials-file <credentials-file> --account-type producer ...
+```
+
 You can also use [examples/0\_5\_setup\_account\_as.py](examples/0_5_setup_account_as.py) as an example to build your own application.
 
 ### Step 1.2: Enable an AWS Account as a Consumer
@@ -235,12 +264,17 @@ mesh_macros.bootstrap_account(
     account_credentials=consumer_credentials
 )
 ```
+or
+
+```
+./data-mesh-cli enable-account --credentials-file <credentials-file> --account-type producer ...
+```
 
 The above Steps 1.1 and 1.2 can be run for any number of accounts that you require to act as Producers or Consumers. You can also use [examples/0\_5\_setup\_account\_as.py](examples/0_5_setup_account_as.py) as an example to build your own application.. If you want to provision an account as both Producer _and_ Consumer, then use `account_type='both'` in the above call to `bootstrap_account()`.
 
 ### Step 2: Create a Data Product
 
-Creating a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account, while leaving the source storage at rest within the Producer. The data mesh objects are shared back to the Producer account to enable local control without accessing the data mesh. Data Products can be created from Glue Catalog Databases or one-or-more Tables, but all permissions are managed at Table level. Producers can run this as many times as they require. To create a data product:
+Data products can be created from one-or-more Glue tables, and the API provides a variety of configuration options to allow you to control how they are exposed. To create a data product:
 
 ```python
 from data_mesh_util import DataMeshProducer as dmp
@@ -265,7 +299,7 @@ table_name = 'The Table Name'
 domain_name = 'The name of the Domain which the table should be tagged with'
 data_product_name = 'If you are publishing multiple tables, the product name to be used for all'
 cron_expr = 'daily'
-crawler_role = 'IAM Role that the created Glue Crawler should run as'
+crawler_role = 'IAM Role that the created Glue Crawler should run as - calling identity must have iam::PassRole on the ARN'
 create_public_metadata = True if 'Use value True to allow any user to see the shared object in the data mesh otherwise False' else False
 
 data_mesh_producer.create_data_products(
@@ -277,13 +311,38 @@ data_mesh_producer.create_data_products(
     sync_mesh_catalog_schedule=cron_expr,
     sync_mesh_crawler_role_arn=crawler_role,
     expose_data_mesh_db_name=None,
-    expose_table_references_with_suffix=None
+    expose_table_references_with_suffix=None,
+    use_original_table_name=None
 )
+```
+or
+
+```
+./data-mesh-cli create-data-product --credentials-file <credentials-file> --source-database-name <database> --table-regex <regular expression matching tables> ...
 ```
 
 You can also use [examples/1\_create\_data\_product.py](examples/1_create_data_product.py) as an example to build your own application.
 
-Please note that upon creation of a data product, you will see a new Database and Table created in the Data Mesh Account, and this Database and Table have been shared back to the producer AWS Account using Resource Access Manager (RAM). Your producer Account may now be able to query data both from within the data mesh and from their own account, but the security Principal used for Data Mesh Utils may require additional permissions to use Athena or other query services.
+By default, a data product replicates Glue Catalog metadata from the Producer's account into the Data Mesh account. The new tables created in the Data Mesh account are shared back to the Producer account through a new database and resource link which let's the Producer change objects in the mesh from within their own Account.
+
+Alternatively, some customers may wish to have a single version of their table metadata which only resides within the Data Mesh, for example for when datasets are prepared specifically for sharing. In this case, the `create-data-product` request allows for the version of the Table in the Data Mesh to be the only master copy, and transparently shared back to the producer. To use this option, instead use API `migrate_tables_to_mesh`:
+
+```
+...
+
+data_mesh_producer.migrate_tables_to_mesh(
+    source_database_name=database_name,
+    table_name_regex=table_name,
+    domain=domain_name,
+    data_product_name=data_product_name,
+    create_public_metadata=True,
+    sync_mesh_catalog_schedule=cron_expr,
+    sync_mesh_crawler_role_arn=crawler_role
+)
+
+```
+
+Upon completion, you will see that the table in the Producer AWS Account has been replaced with a Resource Link shared from the Mesh Account. Your producer Account may now be able to query data both from within the data mesh and from their own account, but the security Principal used for Data Mesh Utils may require additional permissions to use Athena or other query services.
 
 ### Step 3: Request access to a Data Product Table
 
@@ -319,10 +378,15 @@ subscription = data_mesh_consumer.request_access_to_product(
 )
 print(subscription.get('SubscriptionId')
 ```
+or
+
+```
+./data-mesh-cli request-access --credentials-file <credentials-file> --database-name <database> --tables <table1, table2, table3> --request-permissions <list of permissions requested, including INSERT, SELECT, DESCRIBE, UPDATE, DELETE> ...
+```
 
 You can also use [examples/2\_consumer\_request\_access.py](examples/2_consumer_request_access.py) as an example to build your own application.
 
-### Step 4: Grant Access to the Consumer
+### Step 4: Grant or Deny Access to the Consumer
 
 In this step, you will grant permissions to the Consumer who has requested access:
 
@@ -368,6 +432,20 @@ approval = data_mesh_producer.approve_access_request(
     grantable_permissions=grantable_permissions,
     decision_notes=approval_notes
 )
+
+# or deny access request
+approval = data_mesh_producer.deny_access_request(
+    request_id=subscription_id,
+    decision_notes="no way"
+)
+```
+
+or
+
+```
+./data-mesh-cli approve-subscription --credentials-file <credentials-file> --request_id <request id> --notes <notes with the approval> ...
+
+./data-mesh-cli deny-subscription --credentials-file <credentials-file> --request_id <request id> --decision-notes <notes for the denial>
 ```
 
 You can also use [examples/3\_grant\_data\_product\_access.py](examples/3_grant_data_product_access.py) as an example to build your own application.
@@ -400,6 +478,13 @@ data_mesh_consumer.finalize_subscription(
 	subscription_id=subscription_id
 )
 ```
+
+or
+
+```
+./data-mesh-cli import-subscription --credentials-file <credentials-file> --subscription_id <subscription request id> ...
+```
+
 You can also use [examples/4\_finalize\_subscription.py](examples/4_finalize_subscription.py)  as an example to build your own application.
 
 ---
