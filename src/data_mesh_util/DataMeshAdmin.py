@@ -2,6 +2,7 @@ import boto3
 import sys
 import logging
 import botocore.session
+import json
 
 from data_mesh_util.lib.constants import *
 import data_mesh_util.lib.utils as utils
@@ -202,6 +203,51 @@ class DataMeshAdmin:
             "GroupArn": item_tuple[2]
         }
 
+    def _allow_glue_ram_integration(self):
+        # update the glue resource policy to allow RAM integration
+        cf = {
+            "region": self._region,
+            "account_id": self._data_mesh_account_id
+        }
+        optin_fragment = json.loads(utils.generate_policy('glue_ram_optin.pystache', config=cf))
+
+        current_policy, current_hash = self._automator.get_current_glue_policy()
+
+        if current_policy is not None:
+            # scan the existing glue policy to see if we've already added the clause
+            optin_found = False
+            for s in current_policy.get('Statement'):
+                # break early if we see a condition - this is a tbac statement
+                if 'Condition' in s:
+                    continue
+
+                if s.get('Action') == 'glue:ShareResource' and 'Service' in s.get('Principal') and \
+                        s.get('Principal').get('Service') == 'ram.amazonaws.com':
+                    optin_found = True
+                    self._logger.info("Already found Glue/RAM optin policy for LF sharing")
+                    break
+
+            # add the optin fragment if it's not already there
+            if not optin_found:
+                current_policy['Statement'].append(optin_fragment)
+
+                # update the policy
+                self._automator.write_glue_catalog_resource_policy(
+                    policy=current_policy,
+                    current_hash=current_hash
+                )
+                self._logger.info("Created new Glue/RAM optin policy for LF sharing")
+        else:
+            # write a new policy
+            glue_policy = {
+                "Version": "2012-10-17",
+                "Statement": optin_fragment
+            }
+            self._automator.write_glue_catalog_resource_policy(
+                policy=glue_policy
+            )
+            self._logger.info("Created new Glue/RAM optin policy for LF sharing")
+
     def initialize_mesh_account(self):
         '''
         Sets up an AWS Account to act as a Data Mesh central account. This method should be invoked by an Administrator
@@ -221,6 +267,9 @@ class DataMeshAdmin:
 
         # create a new IAM role in the Data Mesh Account to be used for future grants
         mgr_tuple = self._create_data_mesh_manager_role()
+
+        # setup the account to allow glue:ShareResource through RAM
+        self._allow_glue_ram_integration()
 
         return {
             "Manager": self._api_tuple(mgr_tuple),

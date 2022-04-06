@@ -538,7 +538,7 @@ class DataMeshProducer:
         )
 
     def _add_principal_to_glue_resource_policy(self, database_name: str, tables: list, add_principal: str):
-        self._mesh_automator.update_glue_catalog_resource_policy(
+        self._mesh_automator.add_tbac_glue_catalog_resource_policy(
             region=self._current_region,
             database_name=database_name,
             tables=tables,

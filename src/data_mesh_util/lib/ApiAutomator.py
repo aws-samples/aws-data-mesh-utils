@@ -520,15 +520,52 @@ class ApiAutomator:
 
         return all_tables
 
-    def update_glue_catalog_resource_policy(self, region: str, producer_account_id: str, consumer_account_id: str,
-                                            database_name: str, tables: list):
+    def write_glue_catalog_resource_policy(self, policy: dict, current_hash: str = None):
+        '''
+        Write a new glue catalog policy document. This is a low level interface that just performs the mechanic of
+        correctly writing the supplied policy, including where a hash must be supplied.
+        :param policy:
+        :param current_hash:
+        :return:
+        '''
         glue_client = self._get_client('glue')
-        new_resource_policy = None
-        current_resource_policy = None
+
         try:
             current_resource_policy = glue_client.get_resource_policy()
+
+            # if no external hash has been provided, then just use the current hash from the doc.
+            if current_hash is None:
+                current_hash = current_resource_policy.get('PolicyHash')
+
+            glue_client.put_resource_policy(
+                PolicyInJson=json.dumps(policy),
+                PolicyHashCondition=current_hash,
+                PolicyExistsCondition='MUST_EXIST',
+                EnableHybrid='TRUE'
+            )
         except glue_client.exceptions.EntityNotFoundException:
-            pass
+            # write the resource policy as new
+            glue_client.put_resource_policy(
+                PolicyInJson=json.dumps(policy),
+                PolicyExistsCondition='NOT_EXIST',
+                EnableHybrid='TRUE'
+            )
+
+    def get_current_glue_policy(self):
+        glue_client = self._get_client('glue')
+
+        try:
+            current_resource_policy = glue_client.get_resource_policy()
+            glue_policy = json.loads(current_resource_policy.get('PolicyInJson'))
+            current_hash = current_resource_policy.get('PolicyHash')
+
+            return glue_policy, current_hash
+        except glue_client.exceptions.EntityNotFoundException:
+            return None, None
+
+    def add_tbac_glue_catalog_resource_policy(self, region: str, producer_account_id: str, consumer_account_id: str,
+                                              database_name: str, tables: list):
+        current_resource_policy, current_hash = self.get_current_glue_policy()
 
         cf = {
             'region': region,
@@ -542,44 +579,33 @@ class ApiAutomator:
         cf['table_list'] = tables
         policy = json.loads(utils.generate_policy('lf_cross_account_tbac.pystache', config=cf))
 
-        policy_condition = None
         if current_resource_policy is None:
             new_resource_policy = {
                 "Version": "2012-10-17",
                 "Statement": policy
             }
-            glue_client.put_resource_policy(
-                PolicyInJson=json.dumps(new_resource_policy),
-                PolicyExistsCondition='NOT_EXIST',
-                EnableHybrid='TRUE'
+            self.write_glue_catalog_resource_policy(
+                policy=new_resource_policy
             )
             self._logger.info(
                 f"Created new Catalog Resource Policy on {producer_account_id} allowing Tag Based Access by {consumer_account_id}")
         else:
-            new_resource_policy = json.loads(current_resource_policy.get('PolicyInJson'))
-            current_hash = current_resource_policy.get('PolicyHash')
-
             update_statement, policy_index, did_modification = self._get_glue_resource_policy_statement_to_modify(
                 region=region,
-                policy=new_resource_policy, producer_account_id=producer_account_id,
+                policy=current_resource_policy, producer_account_id=producer_account_id,
                 consumer_account_id=consumer_account_id,
                 database_name=database_name, tables=tables
             )
 
             # add the new statement
             if update_statement is None:
-                new_resource_policy['Statement'].append(policy)
+                current_resource_policy['Statement'].append(policy)
                 did_modification = True
             elif update_statement is not None:
-                new_resource_policy['Statement'][policy_index] = update_statement
+                current_resource_policy['Statement'][policy_index] = update_statement
 
             if did_modification is True:
-                glue_client.put_resource_policy(
-                    PolicyInJson=json.dumps(new_resource_policy),
-                    PolicyHashCondition=current_hash,
-                    PolicyExistsCondition='MUST_EXIST',
-                    EnableHybrid='TRUE'
-                )
+                self.write_glue_catalog_resource_policy(current_hash=current_hash, policy=current_resource_policy)
                 self._logger.info(
                     f"Updated Catalog Resource Policy on {producer_account_id} allowing Tag Based Access by {consumer_account_id}")
 
