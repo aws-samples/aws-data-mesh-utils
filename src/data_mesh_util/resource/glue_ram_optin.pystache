@@ -1,0 +1,16 @@
+{
+  "Effect": "Allow",
+  "Action": [
+    "glue:ShareResource"
+  ],
+  "Principal": {
+    "Service": [
+        "ram.amazonaws.com"
+    ]
+  },
+  "Resource": [
+    "arn:aws:glue:{{region}}:{{account_id}}:table/*/*",
+    "arn:aws:glue:{{region}}:{{account_id}}:database/*",
+    "arn:aws:glue:{{region}}:{{account_id}}:catalog"
+  ]
+}
