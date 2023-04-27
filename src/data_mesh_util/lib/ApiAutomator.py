@@ -927,7 +927,11 @@ class ApiAutomator:
         if 'Failures' in response:
             perms_added -= len(response.get('Failures'))
 
-        return perms_added
+        if perms_added == 0:
+            self._logger.error(response.get('Failures'))
+            raise Exception(f"Failed to grant permissions on Account {data_mesh_account_id}")
+        else:
+            return perms_added
 
     def lf_grant_permissions(self, data_mesh_account_id: str, principal: str, database_name: str,
                              table_name: str = None,

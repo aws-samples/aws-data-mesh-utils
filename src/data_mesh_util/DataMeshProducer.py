@@ -89,7 +89,7 @@ class DataMeshProducer:
                            data_mesh_database_name: str,
                            producer_account_id: str,
                            data_mesh_account_id: str, create_public_metadata: bool = True,
-                           expose_table_references_with_suffix: str = "_link", use_original_table_name: bool = False):
+                           expose_table_references_with_suffix: str = "_link", use_original_table_name: bool = False) -> tuple:
         '''
         API to create a table as a data product in the data mesh
         :param table_def:
@@ -162,28 +162,27 @@ class DataMeshProducer:
             self._logger.info(f"Granted Describe on {table_name} to {DATA_MESH_READONLY_ROLENAME}")
 
         # in the producer account, accept the RAM share after 1 second - seems to be an async delay
-        if permissions_granted > 0:
-            time.sleep(1)
-            self._producer_automator.accept_pending_lf_resource_shares(
-                sender_account=data_mesh_account_id
-            )
+        time.sleep(1)
+        self._producer_automator.accept_pending_lf_resource_shares(
+            sender_account=data_mesh_account_id
+        )
 
-            # create a resource link for the data mesh table in producer account
-            if use_original_table_name is True:
-                link_table_name = table_name
-            else:
-                link_table_name = f"{table_name}_link"
-                if expose_table_references_with_suffix is not None:
-                    link_table_name = f"{table_name}{expose_table_references_with_suffix}"
+        # create a resource link for the data mesh table in producer account
+        if use_original_table_name is True:
+            link_table_name = table_name
+        else:
+            link_table_name = f"{table_name}_link"
+            if expose_table_references_with_suffix is not None:
+                link_table_name = f"{table_name}{expose_table_references_with_suffix}"
 
-            self._producer_automator.create_remote_table(
-                data_mesh_account_id=self._data_mesh_account_id,
-                database_name=data_mesh_database_name,
-                local_table_name=link_table_name,
-                remote_table_name=table_name
-            )
+        self._producer_automator.create_remote_table(
+            data_mesh_account_id=self._data_mesh_account_id,
+            database_name=data_mesh_database_name,
+            local_table_name=link_table_name,
+            remote_table_name=table_name
+        )
 
-            return table_name, link_table_name
+        return table_name, link_table_name
 
     def _make_database_name(self, database_name: str):
         return "%s-%s" % (database_name, self._data_producer_identity.get('Account'))

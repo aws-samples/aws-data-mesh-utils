@@ -41,6 +41,7 @@
             "Sid": "ProducerAccess4",
             "Effect": "Allow",
             "Action": [
+                "lakeformation:BatchGrantPermissions",
                 "lakeformation:GrantPermissions",
                 "lakeformation:GetResourceLFTags",
                 "lakeformation:GetLFTag"
