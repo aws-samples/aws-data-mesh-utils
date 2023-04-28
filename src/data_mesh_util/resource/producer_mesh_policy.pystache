@@ -73,7 +73,8 @@
             "Sid": "ProducerPolicy2",
             "Effect": "Allow",
             "Action": [
-                "ram:CreateResourceShare"
+                "ram:CreateResourceShare",
+                "ram:GetResourceShares"
             ],
             "Resource": "*"
         },

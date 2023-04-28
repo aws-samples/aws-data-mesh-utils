@@ -14,7 +14,6 @@ from data_mesh_util.lib.SubscriberTracker import *
 class DataMeshProducer:
     _data_mesh_account_id = None
     _data_producer_account_id = None
-    _data_mesh_manager_role_arn = None
     _session = None
     _iam_client = None
     _sts_client = None
@@ -58,13 +57,16 @@ class DataMeshProducer:
 
         self._data_producer_identity = self._sts_client.get_caller_identity()
         self._data_producer_account_id = self._data_producer_identity.get('Account')
+        producer_role_name = utils.get_central_role_name(self._data_producer_account_id, PRODUCER)
+        self._data_producer_role_arn = utils.get_role_arn(account_id=self._data_mesh_account_id,
+                                                          role_name=producer_role_name)
 
         self._producer_automator = ApiAutomator(target_account=self._data_producer_account_id,
                                                 session=self._session, log_level=self._log_level)
 
         # now assume the DataMeshProducer-<account-id> Role in the Mesh Account
         self._data_mesh_session, self._data_mesh_credentials, self._data_mesh_arn = utils.assume_iam_role(
-            role_name=utils.get_central_role_name(self._data_producer_account_id, PRODUCER),
+            role_name=producer_role_name,
             region_name=self._current_region,
             use_credentials=_producer_credentials,
             target_account=self._data_mesh_account_id
@@ -85,11 +87,15 @@ class DataMeshProducer:
                                                        region_name=self._current_region,
                                                        log_level=log_level)
 
+        if self._log_level == 'DEBUG':
+            utils.log_instance_signature(self, self._logger)
+
     def _create_mesh_table(self, table_def: dict, data_mesh_glue_client, source_database_name: str,
                            data_mesh_database_name: str,
                            producer_account_id: str,
                            data_mesh_account_id: str, create_public_metadata: bool = True,
-                           expose_table_references_with_suffix: str = "_link", use_original_table_name: bool = False):
+                           expose_table_references_with_suffix: str = "_link",
+                           use_original_table_name: bool = False) -> tuple:
         '''
         API to create a table as a data product in the data mesh
         :param table_def:
@@ -106,7 +112,7 @@ class DataMeshProducer:
         # remove properties from a TableInfo object returned from get_table to be compatible with put_table
         keys = [
             'DatabaseName', 'CreateTime', 'UpdateTime', 'CreatedBy', 'IsRegisteredWithLakeFormation', 'CatalogId',
-            'Tags'
+            'Tags', 'VersionId'
         ]
         t = utils.remove_dict_keys(input_dict=table_def, remove_keys=keys)
         t['Owner'] = producer_account_id
@@ -138,8 +144,8 @@ class DataMeshProducer:
                 partition_input_list=table_partitions
             )
 
-        # grant access to the producer account
-        perms = ['INSERT', 'SELECT', 'ALTER', 'DELETE', 'DESCRIBE']
+        # grant full access to the producer account
+        perms = ['INSERT', 'SELECT', 'ALTER', 'DELETE', 'DESCRIBE', 'DROP']
         permissions_granted = self._mesh_automator.lf_grant_permissions(
             data_mesh_account_id=self._data_mesh_account_id,
             principal=producer_account_id,
@@ -153,37 +159,37 @@ class DataMeshProducer:
         if create_public_metadata is True:
             self._mesh_automator.lf_grant_permissions(
                 data_mesh_account_id=self._data_mesh_account_id,
-                principal=utils.get_role_arn(self._data_mesh_account_id, DATA_MESH_READONLY_ROLENAME),
+                principal=utils.get_role_arn(account_id=self._data_mesh_account_id,
+                                             role_name=DATA_MESH_READONLY_ROLENAME),
                 database_name=data_mesh_database_name,
                 table_name=table_name,
                 permissions=['DESCRIBE'],
                 grantable_permissions=None
             )
-            self._logger.info(f"Granted Describe on {table_name} to {DATA_MESH_READONLY_ROLENAME}")
+            self._logger.info(f"Granted Describe on Table {table_name} to {DATA_MESH_READONLY_ROLENAME}")
 
         # in the producer account, accept the RAM share after 1 second - seems to be an async delay
-        if permissions_granted > 0:
-            time.sleep(1)
-            self._producer_automator.accept_pending_lf_resource_shares(
-                sender_account=data_mesh_account_id
-            )
+        time.sleep(1)
+        self._producer_automator.accept_pending_lf_resource_shares(
+            sender_account=data_mesh_account_id
+        )
 
-            # create a resource link for the data mesh table in producer account
-            if use_original_table_name is True:
-                link_table_name = table_name
-            else:
-                link_table_name = f"{table_name}_link"
-                if expose_table_references_with_suffix is not None:
-                    link_table_name = f"{table_name}{expose_table_references_with_suffix}"
+        # create a resource link for the data mesh table in producer account
+        if use_original_table_name is True:
+            link_table_name = table_name
+        else:
+            link_table_name = f"{table_name}_link"
+            if expose_table_references_with_suffix is not None:
+                link_table_name = f"{table_name}{expose_table_references_with_suffix}"
 
-            self._producer_automator.create_remote_table(
-                data_mesh_account_id=self._data_mesh_account_id,
-                database_name=data_mesh_database_name,
-                local_table_name=link_table_name,
-                remote_table_name=table_name
-            )
+        self._producer_automator.create_remote_table(
+            data_mesh_account_id=self._data_mesh_account_id,
+            database_name=data_mesh_database_name,
+            local_table_name=link_table_name,
+            remote_table_name=table_name
+        )
 
-            return table_name, link_table_name
+        return table_name, link_table_name
 
     def _make_database_name(self, database_name: str):
         return "%s-%s" % (database_name, self._data_producer_identity.get('Account'))
@@ -227,6 +233,9 @@ class DataMeshProducer:
                              expose_data_mesh_db_name: str = None,
                              expose_table_references_with_suffix: str = "_link",
                              use_original_table_name: bool = False):
+        if self._log_level == 'DEBUG':
+            self._logger.debug(locals())
+
         if create_public_metadata is None:
             create_public_metadata = True
 
@@ -272,7 +281,7 @@ class DataMeshProducer:
         # grant the mesh permissions to administer the database
         self._mesh_automator.lf_grant_permissions(
             data_mesh_account_id=self._data_mesh_account_id,
-            principal=self._data_mesh_arn,
+            principal=self._data_producer_role_arn,
             database_name=data_mesh_database_name,
             permissions=['ALL'],
             grantable_permissions=None
@@ -334,19 +343,24 @@ class DataMeshProducer:
             )
 
             # grant the mesh permissions to describe and select from the table
+            manager_perms = ['DESCRIBE', 'SELECT', 'DROP']
             self._mesh_automator.lf_grant_permissions(
                 data_mesh_account_id=self._data_mesh_account_id,
-                principal=self._data_mesh_arn,
+                principal=utils.get_role_arn(account_id=self._data_mesh_account_id,
+                                             role_name=DATA_MESH_MANAGER_ROLENAME),
                 database_name=data_mesh_database_name,
                 table_name=table.get('Name'),
-                permissions=['DESCRIBE', 'SELECT'],
+                permissions=manager_perms,
                 grantable_permissions=None
             )
             self._logger.info(
-                f"Granted describe access on Table {table.get('Name')} to Data Mesh {self._data_mesh_account_id}")
+                f"Granted {manager_perms} access on Table {table.get('Name')} to {DATA_MESH_MANAGER_ROLENAME}")
 
             shared_objects.get('Tables').append({
-                'SourceTable': created_table[0],
+                'SourceTable': table.get('Name'),
+                'TargetDatabase': data_mesh_database_name,
+                'TargetTable': created_table[0],
+                'LinkDatabase': data_mesh_database_name,
                 'LinkTable': created_table[1]
             })
 

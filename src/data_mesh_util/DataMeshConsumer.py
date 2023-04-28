@@ -87,6 +87,9 @@ class DataMeshConsumer:
         self._mesh_automator = ApiAutomator(target_account=self._data_mesh_account_id,
                                             session=self._ro_session, log_level=self._log_level)
 
+        if self._log_level == 'DEBUG':
+            utils.log_instance_signature(self, self._logger)
+
     def request_access_to_product(self, owner_account_id: str, database_name: str,
                                   tables: list, request_permissions: list) -> dict:
         '''

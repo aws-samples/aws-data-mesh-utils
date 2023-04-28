@@ -1,5 +1,6 @@
 from data_mesh_util.lib.constants import *
 from data_mesh_util import DataMeshAdmin as data_mesh_admin
+import data_mesh_util.lib.utils as utils
 
 
 class DataMeshMacros:
@@ -12,6 +13,9 @@ class DataMeshMacros:
         self._data_mesh_account_id = data_mesh_account_id
         self._region = region_name
         self._log_level = log_level
+
+        if self._log_level == 'DEBUG':
+            utils.log_instance_signature(self, self._logger)
 
     def bootstrap_account(self, account_type: str, mesh_credentials, account_credentials, crawler_role_arn: str = None):
         # create a data mesh admin for the mesh account
