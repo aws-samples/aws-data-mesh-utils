@@ -25,6 +25,9 @@ class ApiAutomator:
         self._logger.setLevel(log_level)
         self._clients = {}
 
+        if log_level == 'DEBUG':
+            utils.log_instance_signature(self, self._logger)
+
     def _get_client(self, client_name):
         client = self._clients.get(client_name)
 
@@ -822,9 +825,16 @@ class ApiAutomator:
                 entry["Id"] = shortuuid.uuid()
 
             log_message = f"{target_account_id} Database {database_name} Permissions:{permissions}"
+
             if grantable_permissions is not None:
-                entry["PermissionsWithGrantOption"] = grantable_permissions
-                log_message = f"{log_message}, {grantable_permissions} WITH GRANT OPTION"
+                # make sure that grantable permissions can't include anything that isn't in permissions
+                _set_grantable_permissions = []
+                for p in permissions:
+                    if p in grantable_permissions:
+                        _set_grantable_permissions.append(p)
+
+                entry["PermissionsWithGrantOption"] = _set_grantable_permissions
+                log_message = f"{log_message}, {_set_grantable_permissions} WITH GRANT OPTION"
 
             self._logger.info(log_message)
             db_entries.append(entry)
@@ -910,7 +920,8 @@ class ApiAutomator:
             entries.extend(self.create_lf_permissions_entry(
                 data_mesh_account_id=data_mesh_account_id,
                 target_account_id=target_account_id,
-                database_name=database_name, table_name=t,
+                database_name=database_name,
+                table_name=t,
                 permissions=permissions,
                 grantable_permissions=grantable_permissions,
                 target_batch=True)
@@ -928,6 +939,8 @@ class ApiAutomator:
             perms_added -= len(response.get('Failures'))
 
         if perms_added == 0:
+            self._logger.error(
+                f"Exceptions raised while granting Batch Permissions from {data_mesh_account_id} to {target_account_id}")
             self._logger.error(response.get('Failures'))
             raise Exception(f"Failed to grant permissions on Account {data_mesh_account_id}")
         else:

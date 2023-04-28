@@ -27,7 +27,7 @@ export DATA_MESH_ACCOUNT=<my account id>
 ./data-mesh-cli deny-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --decision_notes "No Way Dude!"
 
 # change your mind and approve it now
-./data-mesh-cli approve-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT  --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --grant-permissions <permissions allowed to the consumer> --grantable-permissions <permissions the consumer can pass on. remove parameter for no grantable permissions> --decision_notes "Notes attached to the approval"
+./data-mesh-cli approve-subscription --data_mesh_account_id $DATA_MESH_ACCOUNT --region_name $AWS_REGION --use_credentials "{\"AccessKeyId\":\"my access key\",\"SecretAccessKey\":\"my secret key\"}" --request-id <request> --grant-permissions <permissions allowed to the consumer> --grantable-permissions <permissions the consumer can pass on. remove parameter for no grantable permissions> --decision_notes "Notes attached to the approval"
 ./data-mesh-cli approve-subscription --credentials_file $CREDS_FILE --request-id 4GaXSebUtSvzXQXv7mZt3M --grant-permissions SELECT --decision_notes "Changed my mind"
 
 # modify the subscription to allow an additional grant

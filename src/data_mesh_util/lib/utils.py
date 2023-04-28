@@ -344,3 +344,8 @@ def generate_resource(service: str, region: str, credentials):
     if 'SessionToken' in use_creds:
         args['aws_session_token'] = use_creds.get('SessionToken')
     return boto3.resource(**args)
+
+def log_instance_signature(obj, logger) -> None:
+    logger.debug(f"Instance Signature for {obj.__class__.__name__}")
+    for attr in vars(obj):
+        logger.debug(f"{attr}: {obj.__dict__.get(attr)}")

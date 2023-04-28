@@ -63,6 +63,9 @@ class DataMeshAdmin:
 
         self._logger.debug(f"Running as {self._current_identity.get('Arn')}")
 
+        if self._log_level == 'DEBUG':
+            utils.log_instance_signature(self, self._logger)
+
     def _create_template_config(self, config: dict):
         if config is None:
             config = {}
