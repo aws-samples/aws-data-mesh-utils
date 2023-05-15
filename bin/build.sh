@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$1" == "build" ]; then
-  rm -Rf dist build && python3 setup.py install
+  rm -Rf dist build && python3 -m build
   twine check dist/*
 elif [ "$1" == "deploy-test" ]; then
   twine upload --repository-url https://test.pypi.org/legacy/ dist/*
