@@ -35,7 +35,7 @@ class DataMeshAdmin:
     _automator = None
 
     def __init__(self, data_mesh_account_id: str, region_name: str = 'us-east-1', log_level: str = "INFO",
-                 use_credentials=None):
+                 use_credentials = None, use_profile: str = None):
         self._data_mesh_account_id = data_mesh_account_id
         # get the region for the module
         if region_name is None:
@@ -43,10 +43,14 @@ class DataMeshAdmin:
         else:
             self._region = region_name
 
-        if use_credentials is None:
+        if use_credentials is not None and use_profile is not None:
+            raise Exception("Cannot use Credentials and Profile at the same time")
+        elif use_credentials is None and use_profile is None:
             self._session = boto3.session.Session(region_name=self._region)
-        else:
+        elif use_credentials is not None and use_profile is None:
             self._session = utils.create_session(credentials=use_credentials, region=self._region)
+        elif use_credentials is None and use_profile is not None:
+            self._session = boto3.session.Session(profile_name=use_profile, region_name=self._region)
 
         self._iam_client = self._session.client('iam')
         self._sts_client = self._session.client('sts')
@@ -60,6 +64,9 @@ class DataMeshAdmin:
         self._log_level = log_level
         self._automator = ApiAutomator(target_account=data_mesh_account_id, session=self._session,
                                        log_level=self._log_level)
+
+        if use_profile is not None:
+            self._logger.info(f"Using profile: {use_profile}")
 
         self._logger.debug(f"Running as {self._current_identity.get('Arn')}")
 

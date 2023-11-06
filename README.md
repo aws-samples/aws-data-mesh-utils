@@ -120,6 +120,29 @@ This file includes the following identities:
 
 For the example usage scripts, you can configure a file on your filesystem, and eference this file in through the `CredentialsFile` environment variable. For the `cli`, you can provide the path to this file using argument `--credentials-file`. Please make sure not to add this file to any publicly shared resources such as git forks of the codebase!
 
+### Using Profiles with ~/.aws/config
+
+If you are using named profiles in your aws config file like the below:
+
+```sh
+[profile someAccount-Admin]
+output = json
+region = eu-west-2
+credential_process = ...
+```
+
+You can use a Profile by name by supplying 'use_profile' instead of 'use_credentials
+
+```python
+mesh_admin = dmu.DataMeshAdmin(
+    data_mesh_account_id=data_mesh_account,
+    region_name=aws_region,
+    log_level=logging.DEBUG,
+    use_profile='someAccount-Admin'
+)
+```
+This can be used to supply all account profiles, for example: mesh, produce, and consumer 
+
 ## Getting Started
 
 To install AWS Data Mesh Utils, install from Pypi:

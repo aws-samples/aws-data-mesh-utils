@@ -17,13 +17,15 @@ class DataMeshMacros:
         if self._log_level == 'DEBUG':
             utils.log_instance_signature(self, self._logger)
 
-    def bootstrap_account(self, account_type: str, mesh_credentials, account_credentials, crawler_role_arn: str = None):
+    def bootstrap_account(self, account_type: str, mesh_credentials=None, account_credentials=None, crawler_role_arn: str = None, 
+                          mesh_profile=None, account_profile=None):
         # create a data mesh admin for the mesh account
         mesh_admin = data_mesh_admin.DataMeshAdmin(
             data_mesh_account_id=self._data_mesh_account_id,
             region_name=self._region,
             log_level=self._log_level,
-            use_credentials=mesh_credentials
+            use_credentials=mesh_credentials,
+            use_profile=mesh_profile
         )
 
         # create a data mesh admin for the target account
@@ -31,14 +33,15 @@ class DataMeshMacros:
             data_mesh_account_id=self._data_mesh_account_id,
             region_name=self._region,
             log_level=self._log_level,
-            use_credentials=account_credentials
+            use_credentials=account_credentials,
+            use_profile=account_profile
         )
 
         if account_type.lower() == PRODUCER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_producer_account()
-            mesh_admin.enable_account_as_producer(account_id=account_credentials.get('AccountId'))
+            mesh_admin.enable_account_as_producer(account_id=account_admin._sts_client.get_caller_identity()["Account"])
         elif account_type.lower() == CONSUMER.lower() or account_type.lower() == self._BOTH.lower():
             account_admin.initialize_consumer_account()
-            mesh_admin.enable_account_as_consumer(account_id=account_credentials.get('AccountId'))
+            mesh_admin.enable_account_as_consumer(account_id=account_admin._sts_client.get_caller_identity()["Account"])
         else:
             raise Exception(f"Unknown Account Type {account_type}")

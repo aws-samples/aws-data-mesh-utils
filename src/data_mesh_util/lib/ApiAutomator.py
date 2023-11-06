@@ -660,13 +660,25 @@ class ApiAutomator:
 
     def assert_is_data_lake_admin(self, principal):
         lf_client = self._get_client('lakeformation')
-
+        lf_client_admins = lf_client.get_data_lake_settings().get('DataLakeSettings').get("DataLakeAdmins")
         admin_matched = False
-        for admin in lf_client.get_data_lake_settings().get('DataLakeSettings').get("DataLakeAdmins"):
-            if principal == admin.get('DataLakePrincipalIdentifier'):
+        for admin in lf_client_admins:
+            admin_principal = admin.get('DataLakePrincipalIdentifier')
+            print(admin_principal)
+            if principal == admin_principal:
                 admin_matched = True
                 break
-
+            if 'assumed-role' in principal:
+                principal_parts = principal.split(':')
+                admin_principal_parts = admin_principal.split(':')
+                if (principal_parts[0] == admin_principal_parts[0] and 
+                    principal_parts[1] == admin_principal_parts[1] and 
+                    principal_parts[3] == admin_principal_parts[3] and 
+                    principal_parts[4] == admin_principal_parts[4] and 
+                    admin_principal_parts[5] in principal_parts[5]
+                    ):
+                    admin_matched = True
+                    break
         if admin_matched is False:
             raise Exception(f"Principal {principal} is not Data Lake Admin")
 
